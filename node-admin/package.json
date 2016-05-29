@@ -1,0 +1,21 @@
+{
+  "name": "openbuildingcodes-nodejs-admin",
+  "description": "OpenBuildingCodes nodejs-admin Server",
+  "version": "0.0.1",
+  "private": true,
+  "main": "adminserver.js",
+  "dependencies": {
+    "express": "*",
+    "express-handlebars": "*",
+    "body-parser": "*",
+    "elasticsearch": "*",
+    "fs":"*",
+    "redis":"*",
+    "json2csv":"*",
+    "csvtojson":"*"
+  },
+  "scripts": {
+    "start1": "nodemon /app/adminserver.js",
+    "start2": "nodemon -x 'cd /app/ && node adminserver.js'"
+  }
+}

@@ -1,0 +1,48 @@
+<div class="container">
+  <h1>Admin</h1>
+  <div class="status"></div>
+  <table id="table" class="table table-striped" width="600px  ">
+    <thead><tr><th>ID</th><th>Title</th><th>HTML URL</th><th>PDF URL</th></tr></thead>
+    <tbody>
+    {{#each document}}
+      <tr>
+        <td>{{id}}</td>
+        <td>{{title}}</td>
+        <td>{{htmlurl}}</td>
+        <td>{{pdfurl}}</td>
+        <td>
+          <button id="{{id}}" type="button" class="btn btn-default statusButton">Status</button>
+        </td>
+        <td>
+          <div class="btn-group">
+            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a href="#" class="downloadButton" id="{{id}}">Download</a></li>
+              <li><a href="#" class="jsonButton" id="{{id}}">Create JSON File</a></li>
+              <li><a href="#" class="splitButton" id="{{id}}">Split PDF Pages</a></li>
+              <li><a href="#" class="ocrButton" id="{{id}}">OCR Pages</a></li>
+              <li><a href="#" class="" id="{{id}}"></a></li>
+              <li><a href="#" class="" id="{{id}}"></a></li>
+              <li><a href="#" class="" id="{{id}}"></a></li>
+              <li><a href="#" class="" id="{{id}}"></a></li>
+              <li><a href="#" class="deleteButton" id="{{id}}">Remove</a></li>
+        </td>
+      </tr>
+    {{/each}}
+      <tr>
+        <td id="newid"><input id="id" type="text"></input></td>
+        <td id="newtitle"><input id="title" type="text"></input></td>
+        <td id="newhtmlurl"><input id="htmlurl" type="text"></input></td>
+        <td id="newpdfurl"><input id="pdfurl" type="text"></input></td>
+        <td><button id="button">Add</button></td>
+      </tr>
+  </tbody>
+  </table>
+  <p>
+  <button id="importCSV">Import from file</button> <button id="exportCSV">Export to file</button>
+</div>
+<script src="js/mindmup-editabletable.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+<script src="js/edit.js"></script>

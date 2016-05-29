@@ -1,0 +1,9 @@
+FROM google/nodejs
+
+EXPOSE 8080
+
+ADD . /app
+RUN npm install
+RUN npm install -g nodemon
+
+CMD ["nodemon","adminserver.js"]

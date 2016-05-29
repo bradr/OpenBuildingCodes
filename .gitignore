@@ -1,0 +1,7 @@
+node_modules
+.DS_Store
+README
+files
+node-admin/node_modules
+node-server/node_modules
+*.pdf

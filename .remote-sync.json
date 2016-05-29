@@ -1,0 +1,14 @@
+{
+  "uploadOnSave": true,
+  "hostname": "bradr.ca",
+  "target": "/var/www/bradr/root/OpenBC",
+  "ignore": [
+    ".git/**",
+    "node_modules/**"
+  ],
+  "username": "bradr",
+  "keyfile": "/Users/bradr/.ssh/id_rsa2",
+  "transport": "scp",
+  "port": "22"
+}
+
