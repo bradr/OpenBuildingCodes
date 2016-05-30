@@ -98,8 +98,6 @@ module.exports = {
   getParam: function (id, param, callback) {
     client.get(id, function (err, result) {
       var value = JSON.parse(result);
-//      console.log(id+':'+param+':   ' + result);
-//      console.log(id+':'+param+':   ' + value[param]);
       callback(err, value[param]);
     });
   }

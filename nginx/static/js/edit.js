@@ -162,15 +162,24 @@ $('.statusButton').on('click', function (evt) {
 
 $('.ocrButton').on('click', function(evt){
 	var id = $(this)[0].id;
-	$.get('/admin/ocr/' + id, function (data) {
-		console.log(data);
-		if (data) {
-			console.log('OCRing: ' + data);
-			//toastr.success('Successfully created JSON file for ' + id);
+	var evtSource = new EventSource("/admin/ocr/" + id);
+	$('.status').append('<div id="'+id+'OcrPdf" class="alert alert-info collapse" role="alert"></div>');
+	$("#"+id+"OcrPdf").collapse("show");
+	evtSource.onmessage = function(e) {
+		console.log("Received: " + e.data);
+		if (e.data == "--COMPLETE--") {
+			console.log('CLOSE');
+			setTimeout(function() {
+				$('#'+id+'OcrPdf').collapse("hide");
+			},3000);
+			evtSource.close();
 		} else {
-			//toastr.error('Error creating JSON file for ' + id);
+			$('#'+id+'OcrPdf').html(e.data);
 		}
-	});
+	};
+	evtSource.onerror = function(e) {
+		console.log("EventSource failed: " + JSON.stringify(e));
+	};
 });
 
 $('#importCSV').on('click', function (evt){

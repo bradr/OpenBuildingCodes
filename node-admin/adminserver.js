@@ -151,66 +151,52 @@ app.get('/admin/download/:id', function (req, res, next) {
     });
   });
 });
+
 app.get('/admin/ocr/:id', function (req, res, next) {
   var id = req.params.id;
+  res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-control": "no-cache"});
+  res.write('data: Initializing OCR function\n\n')
   db.getParam(id, 'htmlurl', function (err, htmlurl) {
     db.getParam(id, 'pdfurl', function (err, pdfurl) {
       var cp = require("child_process");
 
-//      cp.exec('apt-get install imagemagick', function (error, stdout, stderr) {
       cp.exec('pdftk files/icc.ibc.2012.pdf dump_data | grep NumberOfPages', function (error, stdout, stderr) {
         console.log('stdout:'+stdout+' stderr:'+stderr);
         var num = stdout.match(/\d+/);
+        num = 10;
         console.log('num:'+num);
-        for (var i=0; i < num; i++) {
-          cp.exec('pdftk files/icc.ibc.2012.pdf cat 55 output files/icc.ibc.2012_55.pdf', function (error, stdout, sderr) {
-            console.log('PDFTD: stdout:'+stdout+' stderr:'+stderr);
-            cp.exec('pdffonts files/icc.ibc.2012_55.pdf', function (error, stdout, sderr) {
-              console.log('PDFFONTS stdout:'+stdout+' stderr:'+stderr);
-              if (1) { //IF THERE ARE NO FONTS
-                cp.exec('pdfsandwich files/icc.ibc.2012_55.pdf', function (error, stdout, sderr) {
-                  console.log('SANDY:stdout:'+stdout+' stderr:'+stderr);
-                  res.status(200).send('success');
-                });
-
-              } else {
-                //Done
-              }
+        var i = 1;
+        function ocr(i) {
+          if (i<num) {
+            cp.exec('pdftk files/icc.ibc.2012.pdf cat '+i+' output files/icc.ibc.2012_'+i+'.pdf', function (error, stdout, sderr) {
+              console.log('PDFTD: stdout:'+stdout+' stderr:'+stderr);
+              cp.exec('pdffonts files/icc.ibc.2012_'+i+'.pdf', function (error, stdout, stderr) {
+                console.log('PDFFONTS');// stdout:'+stdout+' stderr:'+stderr);
+                var out = stdout.split('\n');
+                console.log(out.length);
+                if (out.length > 3) {
+                  res.write('data: '+id+': Page '+i+' of '+num+' already OCRed\n\n')
+                  console.log('SANDY: stdout:'+stdout+' stderr:'+stderr);
+                  i++;
+                  ocr(i);
+                } else {
+                  cp.exec('pdfsandwich files/icc.ibc.2012_'+i+'.pdf', function (error, stdout, stderr) {
+                    res.write('data: '+id+': OCR Page '+i+' of '+num+'\n\n')
+                    console.log('SANDY: stdout:'+stdout+' stderr:'+stderr);
+                    i++;
+                    ocr(i);
+                  });
+                }
+              });
             });
-          });
+          } else {
+            console.log('DONE ' + i + ' Pages');
+            res.write('data: OCR Complete: '+i+' pages scanned\n\n')
+            res.write('data: --COMPLETE--\n\n');
+          }
         }
+        ocr(i);
       });
-
-      // res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-control": "no-cache"});
-      //
-      // if (htmlurl) {
-      //
-      //
-      // }
-      // if (pdfurl) {
-      //   var process = cp.spawn('curl', ["-o", "files/"+id+".pdf", pdfurl]);
-      //   var str = "";
-      //
-      //   process.stderr.on('data', function (data) {
-      //     str += data.toString();
-      //     var lines = str.split(/(\r?\n)/g);
-      //     for (var i in lines) {
-      //       if (i == lines.length -1) {
-      //         str = lines[i];
-      //       } else {
-      //         res.write('data: PDF' + lines[i] + "\n\n");
-      //       }
-      //     }
-      //   });
-      //   process.on('close', function (code) {
-      //     res.write('data: --EOF--\n\n');
-      //   });
-      //   process.on('error', function (err) {
-      //     console.log('ERROR: '+err);
-      //   });
-      // } else {
-      //   res.write("data: PDF--none--\n\n");
-      // }
     });
   });
 });
@@ -229,49 +215,64 @@ app.get('/admin/createJSON/:id', function (req, res, next) {
 
 app.get('/admin/getStatus/:id', function (req, res, next) {
   var id = req.params.id;
+  var count = 0;
   var result = "";
+  function done () {
+    if (count >= 3) {
+      if (result =="") {
+        result = "OK";
+      }
+      res.status(200).send(result);
+    } else {
+        console.log(count);
+        setTimeout(function() {
+          console.log(count);
+          done();
+        }
+        ,100);
+    }
+  }
   db.getParam(id, 'htmlurl', function (err, htmlurl) {
     db.getParam(id, 'pdfurl', function (err, pdfurl) {
       if (pdfurl) {
         fs.stat("files/"+id + ".pdf", function (err, stats) {
           if (err || !stats.isFile()) {
             result += "PDF file has not been downloaded\n";
+            count++;
           } else {
             fs.stat("files/" +id+ "_0.png", function (err, stats) {
               if (err || !stats.isFile()) {
                 result += "PDF pages have not been split\n";
+                count++;
               } else {
                 fs.stat("files/"+id+"_0.txt", function (err, stats) {
                   if (err || !stats.isFile()) {
                     result += "PDF pages have not been OCRed\n";
                   }
+                  count++;
                 });
               }
             });
           }
         });
-      }
+      } else { count++; }
       if (htmlurl) {
         fs.stat("files/"+ id + ".html", function (err, stats) {
           if (err || !stats.isFile()) {
             result += "HTML file has not been downloaded\n";
           }
+          count++;
         });
-      }
+      } else { count++; }
       fs.stat("files/"+id + ".json", function (err, stats) {
         if (err || !stats.isFile()) {
           result += "JSON file has not been created\n";
         }
+        count=count+1;
       });
-
     });
   });
-  setTimeout(function() {
-    if (result =="") {
-      result = "OK";
-    }
-    res.status(200).send(result);
-  }, 500);
+  done();
 });
 
 app.listen(PORT);
