@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y \
   pdftk \
   unpaper \
   exactimage \
-  poppler-utils
+  poppler-utils \
+  curl
 
 #RUN apt-get update
 #RUN apt-get install -y nodejs

@@ -117,13 +117,69 @@ app.get('/admin/download/:id', function (req, res, next) {
     db.getParam(id, 'pdfurl', function (err, pdfurl) {
       //var pdfurl = req.body.pdfurl;
       var cp = require("child_process");
-
       res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-control": "no-cache"});
 
       if (htmlurl) {
+        if (htmlurl.match(/iccsafe\.org/)) {
+          var links = [];
+          var urlRoot = htmlurl.match(/^(.+)index\.html$/)[1];
+          function getLinks(html, callback) {
+            var cheerio = require('cheerio');
+            $ = cheerio.load(html);
+            var toc = $('#button_toc').html();
+            $ = cheerio.load(toc);
+            $('a').map(function(i, link) {
+              links.push(urlRoot+link.attribs.href)
+            });
+            fs.writeFileSync('files/'+id+'.html', toc);
+            callback(links);
+          }
+          var i = 0;
+          function downloadLinks(links) {
+            //var cmd = 'curl -g -o files/'+id+'_'+i+'.html "'+ links[i]+'"';
+            if (links[i].match(/html$/)) {
+              var request2 = require('request');
+              request2(links[i], function(error, response, html) {
+                var cheerio = require('cheerio');
+                $ = cheerio.load(html);
+                //console.log(html);
+                var contents = $('.print-section').html();
+                fs.writeFileSync('files/'+id+'_'+i+'.html', contents);
+                i++;
+                if (i < links.length) {
+                  console.log('Downloading' + links[i]);
+                  res.write('data: HTML '+links[i]+'\n\n');
+                  downloadLinks(links);
+                }
+              });
+            } else {
+              i++;
+              if (i < links.length) {
+                downloadLinks(links);
+              }
+            }
 
+            //console.log(cmd);
+            // var process = cp.exec(cmd, function(error, stdout, stderr) {
+            //   i++;
+            //   if (i < links.length) {
+            //     console.log(stdout+stderr);
+            //     res.write('data: HTML '+links[i]+'\n\n');
+            //     //downloadContents()
+            //     downloadLinks(links);
+            //   }
+            // });
+          }
+          var request = require('request');
+          request(htmlurl, function(error, response, html) {
+            getLinks(html, function (links) {
+              downloadLinks(links);
+            });
+          });
+        }
 
       }
+
       if (pdfurl) {
         var process = cp.spawn('curl', ["-o", "files/"+id+".pdf", pdfurl]);
         var str = "";

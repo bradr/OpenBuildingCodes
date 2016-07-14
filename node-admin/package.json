@@ -12,7 +12,8 @@
     "fs":"*",
     "redis":"*",
     "json2csv":"*",
-    "csvtojson":"*"
+    "csvtojson":"*",
+    "cheerio":"*"
   },
   "scripts": {
     "start1": "nodemon /app/adminserver.js",

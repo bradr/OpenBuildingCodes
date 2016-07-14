@@ -106,6 +106,7 @@ $('.downloadButton').on('click', function(evt){
 	$('.status').append('<div id="'+id+'DownloadPdf" class="alert alert-info collapse" role="alert"></div>');
 	$('.status').append('<div id="'+id+'DownloadHtml" class="alert alert-info collapse" role="alert"></div>');
 	$("#"+id+"DownloadPdf").collapse("show");
+	$("#"+id+"DownloadHtml").collapse("show");
 	console.log('Messages');
 
 	evtSource.onmessage = function(e) {
@@ -125,6 +126,8 @@ $('.downloadButton').on('click', function(evt){
 			evtSource.close();
 		} else if (e.data.match(/^PDF/)){
 			$('#'+id+'DownloadPdf').html("Downloading pdf file for: " +id);
+		} else if (e.data.match(/^HTML/)){
+			$('#'+id+'DownloadHtml').html("Downloading: " +e.data);
 		}
 	};
 	evtSource.onerror = function(e) {
