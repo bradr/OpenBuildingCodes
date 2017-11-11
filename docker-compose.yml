@@ -1,12 +1,12 @@
 version: '2'
 
 services:
-  search:
-    build: ./elasticsearch
-    container_name: search
-    expose:
-      - "9200"
-      - "9300"
+#  search:
+#    build: ./elasticsearch
+#    container_name: search
+#    expose:
+#      - "9200"
+#      - "9300"
   node-admin:
     build: ./node-admin
     container_name: node-admin
@@ -32,7 +32,7 @@ services:
     depends_on:
       - redis
       - node-admin
-      - search
+#      - search
     links:
       - node-admin
   redis:

@@ -13,22 +13,17 @@ RUN apt-get update && apt-get install -y \
   imagemagick \
   tesseract-ocr \
   pdftk \
-  unpaper \
-  exactimage \
-  poppler-utils \
+#  unpaper \
+#  exactimage \
+#  poppler-utils \
   curl
 
-#RUN apt-get update
-#RUN apt-get install -y nodejs
-#RUN apt-get install -y npm
-#RUN apt-get install -y imagemagick
-#RUN apt-get install -y tesseract-ocr
+#RUN dpkg -i pdfsandwich_0.1.4_amd64.deb && apt-get -fy install
 
-RUN dpkg -i pdfsandwich_0.1.4_amd64.deb && apt-get -fy install
-
+RUN npm cache clean -f && npm install -g n && n stable
 RUN ln -s /usr/bin/nodejs /usr/bin/node
 
-RUN npm install
+#RUN npm install
 RUN npm install -g nodemon
 
 CMD ["nodemon","adminserver.js"]
