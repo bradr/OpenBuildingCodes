@@ -9,7 +9,7 @@
     "express-handlebars": "*",
     "body-parser": "*",
     "elasticsearch": "*",
-    "fs":"*",
+    "file-system":"*",
     "redis":"*",
     "json2csv":"*",
     "csvtojson":"*",

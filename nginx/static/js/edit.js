@@ -1,3 +1,4 @@
+var consolejam = 0;
 $('#table').editableTableWidget();
 $('#textAreaEditor').editableTableWidget({editor: $('<textarea>')});
 $('head').append('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" type="text/css" />');
@@ -78,6 +79,19 @@ exportCSV = function() {
 	});
 }
 
+console = function(text) {
+	$("#console").append("<br> >" + text.replace(/<br>/gi,"<br> >"));
+	if (!consolejam) {
+		consolejam = 1;
+		$('#console').animate({scrollTop: $('#console').prop("scrollHeight")}, 500, function() {
+			consolejam = 0;
+			$("#console").scrollTop($("#console").prop("scrollHeight"));
+		});
+	} else {
+		$("#console").scrollTop($("#console").prop("scrollHeight"));
+	}
+}
+
 //Handlers:
 $('#button').on('click', function(evt){
 	$('#newid').html( $('#id').val() );
@@ -103,43 +117,29 @@ $('.deleteButton').on('click', function(evt){
 $('.downloadButton').on('click', function(evt){
 	var id = $(this)[0].id;
 	var evtSource = new EventSource("/admin/download/" + id);
-	$('.status').append('<div id="'+id+'DownloadPdf" class="alert alert-info collapse" role="alert"></div>');
-	$('.status').append('<div id="'+id+'DownloadHtml" class="alert alert-info collapse" role="alert"></div>');
-	$("#"+id+"DownloadPdf").collapse("show");
-	$("#"+id+"DownloadHtml").collapse("show");
-	console.log('Messages');
 
 	evtSource.onmessage = function(e) {
-		console.log("Received: " + e.data);
 		if (e.data == "--EOF--") {
-			console.log('CLOSE');
-			$('#'+id+'DownloadPdf').html("PDF File for " + id + " Successfully Downloaded");
-			setTimeout(function() {
-				$('#'+id+'DownloadPdf').collapse("hide");
-			},3000);
+			console("PDF File for " + id + " Successfully Downloaded");
+			toastr.success("PDF File for " + id + " Successfully Downloaded");
 			evtSource.close();
 		} else if (e.data.match(/^PDF--none--/)){
-			$('#'+id+'DownloadPdf').html("No PDF File to Download for: " +id);
-			setTimeout(function() {
-				$('#'+id+'DownloadPdf').collapse("hide");
-			},3000);
+			console("No PDF File to Download for: " +id);
 			evtSource.close();
 		} else if (e.data.match(/^PDF/)){
-			$('#'+id+'DownloadPdf').html("Downloading pdf file for: " +id);
+			console("Downloading pdf file for: " +id);
 		} else if (e.data.match(/^HTML/)){
-			$('#'+id+'DownloadHtml').html("Downloading: " +e.data);
+			console("Downloading: " +e.data);
 		}
 	};
 	evtSource.onerror = function(e) {
-		console.log("EventSource failed: " + JSON.stringify(e));
+		console("EventSource failed: " + JSON.stringify(e));
 	};
 });
 $('.jsonButton').on('click', function(evt){
 	var id = $(this)[0].id;
 	$.get('/admin/createJSON/' + id, function (data) {
-		console.log(data);
 		if (data) {
-			console.log('created json');
 			toastr.success('Successfully created JSON file for ' + id);
 		} else {
 			toastr.error('Error creating JSON file for ' + id);
@@ -149,39 +149,30 @@ $('.jsonButton').on('click', function(evt){
 
 $('.statusButton').on('click', function (evt) {
 	var id = $(this)[0].id;
-	$('.statusButton#'+id).popover("destroy");
+	
 	$.get("/admin/getStatus/"+id, function (data) {
-		$('.statusButton#'+id).popover({
-			trigger: 'manual',
-			placement: 'left',
-			content: data
-		});
-		$('.statusButton#'+id).popover("show");
-		setTimeout(function() {
-			$('.statusButton#'+id).popover("hide");
-		},2000);
+		console(data);
+		toastr.info("Document Status in console");
 	});
 });
 
 $('.ocrButton').on('click', function(evt){
 	var id = $(this)[0].id;
 	var evtSource = new EventSource("/admin/ocr/" + id);
-	$('.status').append('<div id="'+id+'OcrPdf" class="alert alert-info collapse" role="alert"></div>');
-	$("#"+id+"OcrPdf").collapse("show");
+	toastr.info("OCR In Progress");
+//	$('.status').append('<div id="'+id+'OcrPdf" class="alert alert-info collapse" role="alert"></div>');
+//	$("#"+id+"OcrPdf").collapse("show");
 	evtSource.onmessage = function(e) {
-		console.log("Received: " + e.data);
 		if (e.data == "--COMPLETE--") {
-			console.log('CLOSE');
-			setTimeout(function() {
-				$('#'+id+'OcrPdf').collapse("hide");
-			},3000);
 			evtSource.close();
+			toastr.success("OCR Successful");
 		} else {
-			$('#'+id+'OcrPdf').html(e.data);
+			console(e.data);
 		}
 	};
 	evtSource.onerror = function(e) {
-		console.log("EventSource failed: " + JSON.stringify(e));
+		console("EventSource failed: " + JSON.stringify(e));
+		toastr.success("OCR Successful");
 	};
 });
 

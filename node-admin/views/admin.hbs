@@ -11,7 +11,7 @@
         <td>{{htmlurl}}</td>
         <td>{{pdfurl}}</td>
         <td>
-          <button id="{{id}}" type="button" class="btn btn-default statusButton">Status</button>
+          <button id="{{id}}" type="button" class="btn btn-default statusButton" data-toggle="popover">Status</button>
         </td>
         <td>
           <div class="btn-group">
@@ -21,7 +21,7 @@
             <ul class="dropdown-menu">
               <li><a href="#" class="downloadButton" id="{{id}}">Download</a></li>
               <li><a href="#" class="jsonButton" id="{{id}}">Create JSON File</a></li>
-              <li><a href="#" class="splitButton" id="{{id}}">Split PDF Pages</a></li>
+              <!-- <li><a href="#" class="splitButton" id="{{id}}">Split PDF Pages</a></li> -->
               <li><a href="#" class="ocrButton" id="{{id}}">OCR Pages</a></li>
               <li><a href="#" class="" id="{{id}}"></a></li>
               <li><a href="#" class="" id="{{id}}"></a></li>
@@ -42,7 +42,11 @@
   </table>
   <p>
   <button id="importCSV">Import from file</button> <button id="exportCSV">Export to file</button>
+  <div class="panel panel-default" style="position:fixed; bottom:10px; overflow:scroll; height:200px; width:80%" id="console">
+    <div class="panel-body"></div>
+  </div>
 </div>
 <script src="js/mindmup-editabletable.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.css">
 <script src="js/edit.js"></script>

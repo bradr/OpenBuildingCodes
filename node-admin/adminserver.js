@@ -1,8 +1,9 @@
 var express = require('express');
 var hbs = require('express-handlebars');
 var bodyParser = require('body-parser');
-var search = require('./lib/search.js');
+//var search = require('./lib/search.js');
 var db = require('./lib/db.js');
+var ocr = require('./lib/ocr.js');
 
 var fs = require('fs');
 
@@ -81,7 +82,7 @@ app.get('/admin/importCSV', function (req, res, next) {
         db.addDocument(JSON.stringify(data[i]),function (error, result) {
           counter++;
           if (i == data.length-1 && counter == data.length-1) {
-            res.status(200).send("Success");
+            res.send("Success");
           }
         });
       }
@@ -181,7 +182,7 @@ app.get('/admin/download/:id', function (req, res, next) {
       }
 
       if (pdfurl) {
-        var process = cp.spawn('curl', ["-o", "files/"+id+".pdf", pdfurl]);
+        var process = cp.spawn('curl', ["-o", "files/"+id+".pdf", "-L", pdfurl]);
         var str = "";
 
         process.stderr.on('data', function (data) {
@@ -211,51 +212,33 @@ app.get('/admin/download/:id', function (req, res, next) {
 app.get('/admin/ocr/:id', function (req, res, next) {
   var id = req.params.id;
   res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-control": "no-cache"});
-  res.write('data: Initializing OCR function\n\n')
+  res.write('data: Initializing OCR function\n\n');
   db.getParam(id, 'htmlurl', function (err, htmlurl) {
     db.getParam(id, 'pdfurl', function (err, pdfurl) {
-      var cp = require("child_process");
-
-      cp.exec('pdftk files/icc.ibc.2012.pdf dump_data | grep NumberOfPages', function (error, stdout, stderr) {
-        console.log('stdout:'+stdout+' stderr:'+stderr);
-        var num = stdout.match(/\d+/);
-        num = 10;
-        console.log('num:'+num);
-        var i = 1;
-        function ocr(i) {
-          if (i<num) {
-            cp.exec('pdftk files/icc.ibc.2012.pdf cat '+i+' output files/icc.ibc.2012_'+i+'.pdf', function (error, stdout, sderr) {
-              console.log('PDFTD: stdout:'+stdout+' stderr:'+stderr);
-              cp.exec('pdffonts files/icc.ibc.2012_'+i+'.pdf', function (error, stdout, stderr) {
-                console.log('PDFFONTS');// stdout:'+stdout+' stderr:'+stderr);
-                var out = stdout.split('\n');
-                console.log(out.length);
-                if (out.length > 3) {
-                  res.write('data: '+id+': Page '+i+' of '+num+' already OCRed\n\n')
-                  console.log('SANDY: stdout:'+stdout+' stderr:'+stderr);
-                  i++;
-                  ocr(i);
-                } else {
-                  cp.exec('pdfsandwich files/icc.ibc.2012_'+i+'.pdf', function (error, stdout, stderr) {
-                    res.write('data: '+id+': OCR Page '+i+' of '+num+'\n\n')
-                    console.log('SANDY: stdout:'+stdout+' stderr:'+stderr);
-                    i++;
-                    ocr(i);
-                  });
-                }
-              });
-            });
-          } else {
-            console.log('DONE ' + i + ' Pages');
-            res.write('data: OCR Complete: '+i+' pages scanned\n\n')
-            res.write('data: --COMPLETE--\n\n');
-          }
+      ocr.getNumberOfPages(id)
+      .then(function(num) {
+        res.write('data: ' + id + ': OCRing ' + num + ' Pages'+'\n\n');
+        function loop(page) {
+          ocr.ocr(id,page)
+          .then(function(page) {
+            if (page < num) {
+              res.write('data: ' + id + ': OCR Page ' + page + ' of ' + num + '\n\n');
+              loop(page);
+            } else {
+              res.write('data: ' + id + ': OCR Complete: '+ page +' pages scanned\n\n');
+              res.write('data: --COMPLETE--\n\n');
+            }
+          });
         }
-        ocr(i);
+        loop(1);
+      })
+      .catch(function(err) {
+        console.log("ERROR "+err);
       });
     });
   });
 });
+
 app.get('/admin/createJSON/:id', function (req, res, next) {
   var id = req.params.id;
   db.readDocument(id, function (err, doc) {
@@ -271,64 +254,93 @@ app.get('/admin/createJSON/:id', function (req, res, next) {
 
 app.get('/admin/getStatus/:id', function (req, res, next) {
   var id = req.params.id;
-  var count = 0;
-  var result = "";
-  function done () {
-    if (count >= 3) {
-      if (result =="") {
-        result = "OK";
-      }
-      res.status(200).send(result);
-    } else {
-        console.log(count);
-        setTimeout(function() {
-          console.log(count);
-          done();
+
+    var html = new Promise (function(resolve, reject) {
+      db.getParam(id, 'htmlurl', function(err, result) {
+        if (err) {
+          reject(err);
         }
-        ,100);
-    }
-  }
-  db.getParam(id, 'htmlurl', function (err, htmlurl) {
-    db.getParam(id, 'pdfurl', function (err, pdfurl) {
-      if (pdfurl) {
-        fs.stat("files/"+id + ".pdf", function (err, stats) {
-          if (err || !stats.isFile()) {
-            result += "PDF file has not been downloaded\n";
-            count++;
-          } else {
-            fs.stat("files/" +id+ "_0.png", function (err, stats) {
-              if (err || !stats.isFile()) {
-                result += "PDF pages have not been split\n";
-                count++;
-              } else {
-                fs.stat("files/"+id+"_0.txt", function (err, stats) {
-                  if (err || !stats.isFile()) {
-                    result += "PDF pages have not been OCRed\n";
-                  }
-                  count++;
-                });
-              }
-            });
-          }
-        });
-      } else { count++; }
-      if (htmlurl) {
-        fs.stat("files/"+ id + ".html", function (err, stats) {
-          if (err || !stats.isFile()) {
-            result += "HTML file has not been downloaded\n";
-          }
-          count++;
-        });
-      } else { count++; }
-      fs.stat("files/"+id + ".json", function (err, stats) {
-        if (err || !stats.isFile()) {
-          result += "JSON file has not been created\n";
+        if (result) {
+          fs.stat("files/"+ id + ".html", function (err, stats) {
+            if (err || !stats.isFile()) {
+              resolve(id + " HTML File: Not Downloaded");
+            } else {
+              resolve(" HTML File: Downloaded!");
+            }
+          });
+        } else {
+          resolve(id + " HTML File: None");
         }
-        count=count+1;
       });
     });
+
+    var pdfFile = new Promise (function(resolve, reject) {
+      db.getParam(id, 'pdfurl', function(err, result) {
+        if (err) {
+          reject(err);
+        }
+        if (result) {
+          fs.stat("files/"+id + ".pdf", function (err, result) {
+            if (err) {
+              resolve(err);
+            }
+            if (!result.isFile()) {
+              resolve(id + " PDF File: Not Downloaded");
+            } else {
+              resolve(id + " PDF File: Downloaded");
+            }
+          });
+        } else {
+          resolve(id + " PDF File: none");
+        }
+      });
+    });
+
+    var pdfSplit = new Promise (function(resolve, reject) {
+      ocr.getNumberOfPages(id)
+      .then(function(pages) {
+        fs.stat("files/" +id+ "_" + (pages-1) + ".tif", function(err, result) {
+          if (err) {
+            resolve(id + " Pages not split");
+          }
+          if (result) {
+            resolve(id + " Pages Split");
+          } else {
+            resolve(id + " Pages not split");
+          }
+        });        
+      });
+    });
+
+    var pdfOCR = new Promise (function(resolve, reject) {
+      ocr.getNumberOfPages(id)
+      .then(function(pages) {
+        fs.stat("files/"+id+"_" + (pages-1) + ".txt", function(err, result) {
+          if (err) {
+            resolve(id + " Pages not OCRed");
+          }
+          if (result) {
+            resolve(id + " Pages OCRed");
+          } else {
+            resolve(id + " Pages not OCRed");
+          }
+        });        
+      });
+    });
+
+  Promise.all([html, pdfFile, pdfSplit, pdfOCR])
+  .then(results => {
+    var result ="";
+    for (var r of results) {
+      result += r + "<br>";
+    }
+    res.status(200).send(result);
+  })
+  .catch(error => {
+    console.log(error);
+    res.status(500).send(error);
   });
-  done();
+
 });
 
 app.listen(PORT);

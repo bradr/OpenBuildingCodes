@@ -1,9 +1,5 @@
 var redis = require('redis');
 var client = redis.createClient(6379, "redis");
-//var client = new elasticsearch.Client({
-//  host: 'search:9200',
-//  log: 'trace'
-//});
 
 module.exports = {
   documentList: function (callback) {
@@ -97,8 +93,16 @@ module.exports = {
   },
   getParam: function (id, param, callback) {
     client.get(id, function (err, result) {
+      if (err) {
+        console.log(err);
+        return;
+      }
       var value = JSON.parse(result);
-      callback(err, value[param]);
+      if (value) {
+        callback(err, value[param]);
+      } else {
+        return;
+      }
     });
   }
 };
