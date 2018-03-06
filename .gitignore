@@ -3,6 +3,7 @@ node_modules
 README
 files
 node-admin/node_modules
+node-admin/bleve
 node-server/node_modules
 search/node_modules
 search/index
