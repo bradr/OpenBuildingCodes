@@ -1,5 +1,5 @@
 var consolejam = 0;
-$('#table').editableTableWidget();
+//$('#table').editableTableWidget();
 $('#textAreaEditor').editableTableWidget({editor: $('<textarea>')});
 $('head').append('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" type="text/css" />');
 
@@ -61,6 +61,37 @@ update = function(cell) {
 	});
 };
 
+download = function(id) {
+	var evtSource = new EventSource("/admin/download/" + id);
+
+	evtSource.onmessage = function(e) {
+		if (e.data == "--EOF--") {
+			console("PDF File for " + id + " Successfully Downloaded");
+			toastr.success("PDF File for " + id + " Successfully Downloaded");
+			evtSource.close();
+		} else if (e.data.match(/^PDF--none--/)){
+			console("No PDF File to Download for: " +id);
+			evtSource.close();
+		} else if (e.data.match(/^PDF/)){
+			console(e.data);
+		} else if (e.data.match(/^HTML/)){
+			console("Downloading: " +e.data);
+		}
+	};
+	evtSource.onerror = function(e) {
+		console("EventSource failed: " + JSON.stringify(e));
+	};
+}
+
+deleteIndex = function() {
+	$.ajax({
+		url: '/admin/index',
+		type: 'DELETE',
+		success: function(result) { toastr.success(result); },
+		error: function(error) { toastr.error('Error: ' + JSON.stringify(error)); }
+	});
+}
+
 importCSV = function() {
 	$.ajax({
 		url: '/admin/importCSV',
@@ -115,34 +146,16 @@ $('.deleteButton').on('click', function(evt){
 	});
 });
 $('.downloadButton').on('click', function(evt){
-	var id = $(this)[0].id;
-	var evtSource = new EventSource("/admin/download/" + id);
-
-	evtSource.onmessage = function(e) {
-		if (e.data == "--EOF--") {
-			console("PDF File for " + id + " Successfully Downloaded");
-			toastr.success("PDF File for " + id + " Successfully Downloaded");
-			evtSource.close();
-		} else if (e.data.match(/^PDF--none--/)){
-			console("No PDF File to Download for: " +id);
-			evtSource.close();
-		} else if (e.data.match(/^PDF/)){
-			console("Downloading pdf file for: " +id);
-		} else if (e.data.match(/^HTML/)){
-			console("Downloading: " +e.data);
-		}
-	};
-	evtSource.onerror = function(e) {
-		console("EventSource failed: " + JSON.stringify(e));
-	};
+	download($(this)[0].id);
 });
-$('.jsonButton').on('click', function(evt){
+
+$('.infoButton').on('click', function(evt){
 	var id = $(this)[0].id;
-	$.get('/admin/createJSON/' + id, function (data) {
+	$.get('/admin/getInfo/' + id, function (data) {
 		if (data) {
-			toastr.success('Successfully created JSON file for ' + id);
+			toastr.success('Successfully filled in data for ' + id);
 		} else {
-			toastr.error('Error creating JSON file for ' + id);
+			toastr.error('Error filling in document data for ' + id);
 		}
 	});
 });
@@ -172,8 +185,19 @@ $('.ocrButton').on('click', function(evt){
 	};
 	evtSource.onerror = function(e) {
 		console("EventSource failed: " + JSON.stringify(e));
-		toastr.success("OCR Successful");
+		toastr.error("OCR Failed");
 	};
+});
+$('.indexButton').on('click', function(evt){
+	var id = $(this)[0].id;
+	$.get('/admin/index/' + id, function (data) {
+		if (data) {
+			toastr.success('Successfully indexed ' + id);
+			console(data);
+		} else {
+			toastr.error('Error indexing ' + id);
+		}
+	});
 });
 
 $('#importCSV').on('click', function (evt){
@@ -181,6 +205,9 @@ $('#importCSV').on('click', function (evt){
 });
 $('#exportCSV').on('click', function (evt){
 	exportCSV();
+});
+$('#deleteIndex').on('click', function (evt){
+	deleteIndex();
 });
 $('table td').on('change', function (evt, newValue) {
 	update($(this));

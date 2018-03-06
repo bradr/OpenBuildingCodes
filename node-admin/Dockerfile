@@ -1,12 +1,13 @@
-FROM ubuntu:14.04
+FROM ubuntu
 
 ENV DEBIAN_FRONTEND noninteractive
 
-EXPOSE 8080
+EXPOSE 8081
 
 ADD . /app
 WORKDIR /app
 
+# RUN apt-get update
 RUN apt-get update && apt-get install -y \
   nodejs \
   npm \
@@ -23,7 +24,7 @@ RUN apt-get update && apt-get install -y \
 RUN npm cache clean -f && npm install -g n && n stable
 RUN ln -s /usr/bin/nodejs /usr/bin/node
 
-#RUN npm install
+RUN npm install
 RUN npm install -g nodemon
 
 CMD ["nodemon","adminserver.js"]

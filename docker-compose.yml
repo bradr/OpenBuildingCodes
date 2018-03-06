@@ -1,17 +1,22 @@
 version: '2'
 
 services:
-#  search:
-#    build: ./elasticsearch
-#    container_name: search
-#    expose:
-#      - "9200"
-#      - "9300"
+  search:
+    build: ./search
+    container_name: search
+    ports:
+      - "5000:5000"
+    expose:
+      - "5000"
+    volumes:
+      - ./search/index:/go/src/app/indexes
   node-admin:
     build: ./node-admin
     container_name: node-admin
+    ports:
+      - "8081:8081"
     expose:
-      - "8080"
+      - "8081"
     volumes:
       - ./node-admin:/app
       - ./files:/app/files
@@ -19,7 +24,7 @@ services:
 #        - search
 #        - redis
     links:
-#      - search
+      - search
       - redis
   nginx:
     build: ./nginx
@@ -37,5 +42,6 @@ services:
       - node-admin
   redis:
     image: redis
+    container_name: redis
     expose:
       - "6379"

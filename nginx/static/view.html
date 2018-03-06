@@ -5,7 +5,7 @@
 </head>
 <body>
   <table>
-    <tr><td alight="right"><a href="" id="ocr">Text</a></td></tr>
+    <tr><td align="right"><a href="#" id="ocr">Text</a></td></tr>
   </table>
   <table width=100%>
     <tr>
@@ -23,21 +23,10 @@
     </tr>
   </table>
   <div id="pdf"></div>
-  <a href="/files/icc.ibc.2012_7_ocr.pdf">fdlks</a>
   <style>
     .pdfobject-container { height: 500px; width: 800px; }
     .pdfobject { border: 1px solid #666; }
   </style>
-  <script src="/js/pdfobject.min.js"></script>
-  <script>
-    var options = {
-      pdfOpenParams: {
-        search: 'building',
-        highlight: '30,30,30,10'
-      }
-    };
-    PDFObject.embed("/files/icc.ibc.2012_7_ocr.pdf", "#pdf", options);
-  </script>
 
 </body>
 </html>

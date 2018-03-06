@@ -30,8 +30,10 @@ module.exports = {
     if (json.id) {
       client.exists(json.id, function (err, exists) {
         if (exists) {
-          var err = "Cannot add document, ID exists already";
-          callback(err);
+          client.set(json.id, doc, function (err, result) {
+            //console.log(JSON.stringify(doc));
+            callback(err, result);
+          });
         } else {
           client.rpush('documents', json.id, function (err, result) {
             client.incr('numberOfDocuments', function (err, result) {
@@ -41,7 +43,7 @@ module.exports = {
             });
           });
         }
-      })
+      });
 
     } else {
       var err = "Cannot add document, ID is empty";

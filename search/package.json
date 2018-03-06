@@ -1,0 +1,16 @@
+{
+  "name": "openbuildingcodes-nodejs-search",
+  "description": "OpenBuildingCodes nodejs-search server",
+  "version": "0.0.1",
+  "private": true,
+  "main": "search.js",
+  "dependencies": {
+    "body-parser": "*",
+    "express": "*",
+    "express-handlebars": "*",
+    "request": "^2.83.0"
+  },
+  "scripts": {
+    "start1": "nodemon /app/search.js"
+  }
+}

@@ -5,18 +5,29 @@
   "private": true,
   "main": "adminserver.js",
   "dependencies": {
+    "body-parser": "*",
+    "cheerio": "*",
+    "combined-stream": "^1.0.6",
+    "csvtojson": "*",
+    "elasticsearch": "*",
     "express": "*",
     "express-handlebars": "*",
-    "body-parser": "*",
-    "elasticsearch": "*",
-    "file-system":"*",
-    "redis":"*",
-    "json2csv":"*",
-    "csvtojson":"*",
-    "cheerio":"*"
+    "file-system": "*",
+    "golang": "*",
+    "har-schema": "^2.0.0",
+    "json2csv": "*",
+    "redis": "*",
+    "request": "^2.83.0"
   },
   "scripts": {
     "start1": "nodemon /app/adminserver.js",
     "start2": "nodemon -x 'cd /app/ && node adminserver.js'"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "files/*",
+      "index/*"
+    ],
+    "delay": "2500"
   }
 }
