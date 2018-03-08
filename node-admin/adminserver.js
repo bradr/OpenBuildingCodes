@@ -232,17 +232,16 @@ app.get('/admin/ocr/:id', function (req, res, next) {
           var start = Date.now();
           ocr.ocr(id,page)
           .then(function(page) {
-            var currentpage = page-1;
-            var body = fs.readFileSync('files/'+id+'/'+id+'_'+currentpage+'.txt',"utf8");
+            var body = fs.readFileSync('files/'+id+'/'+id+'_'+page+'.txt',"utf8");
             values.page = page;
             values.body = body;
             //console.log(values.body);
-            fs.writeFileSync('files/'+id+'/meta/'+id+'_'+currentpage+'.json',JSON.stringify(values));
+            fs.writeFileSync('files/'+id+'/meta/'+id+'_'+page+'.json',JSON.stringify(values));
             
             if (page < num) {
               var duration = Date.now()-start;
               res.write('data: ' + id + ': OCR Page ' + page + ' of ' + num + ', Took: ' + duration + 'ms\n\n');
-              loop(page);
+              loop(page+1);
             } else {
               res.write('data: ' + id + ': OCR Complete: '+ page +' pages scanned\n\n');
               res.write('data: --COMPLETE--\n\n');

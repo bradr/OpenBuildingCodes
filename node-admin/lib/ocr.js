@@ -117,7 +117,7 @@ var self = module.exports = {
         .then(function(allDone) {
           time3 = Date.now() - start - time1 - time2;
           //console.log('Pre:'+time1+'ms Convert:'+ time2+ 'ms Tess:'+time3+'ms');
-          resolve(page+1);
+          resolve(page);
         });
       });
     }
