@@ -1,32 +1,100 @@
-<html>
-<head>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
-  <script src="js/view.js"></script>
-</head>
-<body>
-  <table>
-    <tr><td align="right"><a href="#" id="ocr">Text</a></td></tr>
-  </table>
-  <table width=100%>
-    <tr>
-      <td width=150px>
-      </td>
-      <td width=50px>
-        <a href="" id="prev">Previous</a>
-      </td>
-      <td>
-        <div id="viewport"></div>
-      </td>
-      <td width=50px>
-        <a href="" id="next">Next</a>
-      </td>
-    </tr>
-  </table>
-  <div id="pdf"></div>
-  <style>
-    .pdfobject-container { height: 500px; width: 800px; }
-    .pdfobject { border: 1px solid #666; }
-  </style>
+<!DOCTYPE html>
+<html lang="en">
 
-</body>
+  <head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Open Building Codes</title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/view.css">
+
+  </head>
+
+  <body>
+    <header>
+    <!-- Navigation -->
+      <nav class="navbar navbar-light bg-light">
+        <div class="container">
+          <div class="col-lg-3">
+            <a class="navbar-brand" href="#">Open Building Codes</a>
+          </div>
+          <div class="col-lg-9">
+            <form class="form-inline" id="search">
+              <input class="form-control mr-sm-2" type="text" placeholder="Search" id="searchTerm">
+              <button class="btn btn-outline-success my-2 my-sm-0">Search</button>
+            </form>
+          </div>
+        </div>
+      </nav>
+    </header>
+    <!-- Page Content -->
+    <div class="container">
+      
+      <!-- Upper Buttons -->
+      <div class="row">
+        <div class="col-lg-3 mt-2">
+          <div id="backButton"></div>
+        </div> 
+        <div class="col-lg-7 mt-5 mb-1">
+          <div id="ocr"><button class="btn btn-outline-secondary" id="ocrButton"><img src="/img/file-text.svg" alt="Text"></button></div>
+        </div> 
+        <div class="col-lg-2 mt-5 mb-1">
+          <button class="prev btn btn-outline-secondary" data-toggle="tooltip" data-trigger="hover" data-placement="top" data-delay={"show":500} title="Previous Page"><img src="/img/triangle-left.svg" alt="<"></button>
+          <button class="next btn btn-outline-secondary" data-toggle="tooltip" data-trigger="hover" data-placement="top" data-delay={"show":500} title="Next Page"><img src="/img/triangle-right.svg" alt=">"></button>
+        </div> 
+      </div>
+      
+      <!-- Page Content -->
+      <div class="row">
+        <div class="col-lg-3">
+          <!-- Document Info -->
+          <div class="" id="documentInfo"></div>
+        </div>
+        <!-- /.col-lg-3 -->
+        <div class="col-lg-8">
+          <div class="row card">
+            <div id="viewport"></div>
+          </div>
+          <!-- /.row -->
+        </div>
+        <!-- /.col-lg-8 -->
+        <div class="col-lg-1"></div>
+      </div>
+      <!-- /.row -->
+ 
+      <!-- Lower Buttons -->
+      <div class="row mb-5">
+        <div class="col-lg-10">
+        </div> 
+        <div class="col-lg-2">
+          <button class="prev btn btn-outline-secondary" data-toggle="tooltip" data-trigger="hover" data-placement="top" data-delay={"show":500} title="Previous Page"><img src="/img/triangle-left.svg" alt="<"></button>
+          <button class="next btn btn-outline-secondary" data-toggle="tooltip" data-trigger="hover" data-placement="top" data-delay={"show":500} title="Next Page"><img src="/img/triangle-right.svg" alt=">"></button>
+        </div> 
+      </div>
+
+    </div>
+    <!-- /.container -->
+    
+    <!-- Footer -->
+    <footer class="py-5 bg-light footer">
+      <div class="container">
+        <p class="m-0 text-center text-dark"></p>
+      </div>
+      <!-- /.container -->
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.11/handlebars.min.js"></script>
+<script src="js/view.js"></script>
+  </body>
+
 </html>

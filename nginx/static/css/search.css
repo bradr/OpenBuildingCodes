@@ -1,0 +1,22 @@
+body {
+  padding-top: 0px;
+}
+
+.wrapper {
+    height: 100%;
+    min-height: 100%;
+}
+
+.footer {
+
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+dt {
+    font-weight: normal;
+}
+dl {
+    font-size: .8em;
+}

@@ -5,6 +5,7 @@ files
 node-admin/node_modules
 node-admin/bleve
 node-server/node_modules
+bleve-explorer/
 search/node_modules
 search/index
 *.pdf
