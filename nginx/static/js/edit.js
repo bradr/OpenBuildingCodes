@@ -1,6 +1,13 @@
 var consolejam = 0;
 var running = false;
 var evtSource;
+
+
+var numProc = 0;
+var	avgTime = 0;
+var startTime = 0;
+var remaining = 0;
+
 //$('#table').editableTableWidget();
 //$('#textAreaEditor').editableTableWidget({editor: $('<textarea>')});
 $('head').append('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" type="text/css" />');
@@ -161,6 +168,7 @@ showProcesses = function(processes) {
 		if (i < 20) {
 			$("#process").append('<li>'+processes[i]+' <button class="cancel" onClick=\'deleteProcess($(this).parent());\'>Delete</button></li>');
 		} else {
+			remaining = processes.length;
 			$("#process").append('<br>...' + processes.length + ' Processes remaining');
 			i = processes.length;
 		}
@@ -217,8 +225,20 @@ $('#run').on('click', function (evt) {
 			else if (e.data.match(/^CPU/i)) {
 				$('#cpu').html(e.data);
 			} else {
+				if (startTime < Date.now()-100000) {
+					startTime = Date.now();
+				}
+				avgTime = (avgTime*numProc + (Date.now()-startTime))/(numProc+1);
+				numProc++;
+				startTime = Date.now();
+				
 				getProcesses();
-				$("#currentprocess").html('Running ' + e.data);
+				var out = e.data.replace(/,/g, "<br>");
+				var min = Math.floor(avgTime*remaining/1000/60);
+				var sec = Math.round((avgTime*remaining/1000/60 - min)*60);
+				var stats = 'Avg Time per process: '+Math.round(avgTime) + 'ms, Time Remaining: ' + min + 'min '+ sec + 's';
+				$('#stats').html(stats);
+				$("#currentprocess").html(out);
 			}
 		};
 		evtSource.onerror = function(e) {

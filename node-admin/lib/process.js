@@ -45,11 +45,10 @@ var self = module.exports = {
       //Download or Convert or Tesseract (Normal functions)
         var cp = require("child_process");
         cp.exec(process, function (error, stdout, stderr) {
-          if (error || stderr) {
+          if (error) {
             reject(error);
           } else {
             resolve(stdout);
-            //self.getNumberOfPages(id)
           }
         });
       } else {

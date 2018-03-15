@@ -323,6 +323,7 @@ app.delete('/admin/deleteProcess', function (req, res, next) {
   });
 });
 
+
 app.delete('/admin/deleteProcesses', function (req, res, next) {
   db.removeProcesses()
   .then(() => {
