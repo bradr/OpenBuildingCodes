@@ -32,8 +32,8 @@ var self = module.exports = {
         if (id && page) {
           self.getOCR(id,page)
           .then(() => {
-            var p = 'rm -f files/'+id+ '/' + id + '_'+page+'.*';
-            db.addProcess(p);
+            //var p = 'rm -f files/'+id+ '/' + id + '_'+page+'.*';
+            //db.addProcess(p);
             resolve();
           })
           .catch((err) => {
@@ -247,116 +247,6 @@ var self = module.exports = {
         reject(err);
       });
     });
-  },
-  
-  ocr: function (id, page) {
-    return new Promise(function(resolve, reject) {
-      var inputfile = 'files/' + id + '/' + id + '.pdf';
-      var outputfile = 'files/' + id + '/' + id + '_' + page + '.tif';
-      var outputfile2 = 'files/' + id + '/img/' + id + '_' + page + '.png';
-      var ocrfile = 'files/' + id + '/'+ id + '_' + page;
-  
-      function convert() {
-        return new Promise(function(resolve, reject) {
-          var cp = require("child_process");
-          cp.exec('convert -density 300 -compress Group4 -type bilevel -monochrome ' + inputfile + '[' + page + '] -flatten ' + outputfile, function (error, stdout, stderr) {
-            if (error) {
-              console.log(error);
-              reject(error);
-            } else {
-              //Create png in parallel
-              cp.exec('convert -density 300 -monochrome ' + inputfile + '[' + page + '] -flatten ' + outputfile2);
-              cp.exec('identify -format "%wx%h" ' + outputfile, function(error, stdout, stderr) {
-                if (stdout) {
-                  var size = {
-                    x: stdout.match(/[^x]+/g)[0],
-                    y: stdout.match(/[^x]+/g)[1]
-                  };
-                  resolve(size);
-                } else {
-                  reject(stderr);
-                }
-              });
-            }
-          });
-        });
-      }
-      function tesseract() {
-        return new Promise(function(resolve, reject) {
-          var cp = require("child_process");
-          //preserve_interword_spaces=1
-          cp.exec('tesseract -c preserve_interword_spaces=1 ' + outputfile + ' - hocr', function (error, stdout, stderr) { //hocr
-            if (error ) {
-              console.log(error);
-              resolve();//(error);
-            }
-            else {
-              cp.exec('rm '+outputfile);
-              resolve(stdout);
-            }
-          });
-        });
-      }
-      function hocrClean(hocr) {
-        //fs = require('fs');
-        //var file = fs.readFileSync('hocr.html',"utf8");
-        var cheerio = require('cheerio');
-        $ = cheerio.load(hocr);
-        
-        $('.ocr_line').each(function(i, elem) {
-            var line='';
-            $(this).children().each(function(elem) {
-                line += $(this).html() + ' ';
-            });
-            $(this).html(line);
-        });
-        //fs.writeFileSync('hocr2.html',$.html());
-        var text = $.text();//.replace(/\n\s*\n/g, '<br>\n');
-        //text = text.replace(/\n/g, '<br>');
-        //text = text.replace(/\s/g,'&nbsp;')
-        return {text: text, hocr:$.html()};
-      }
-      
-      var start = Date.now();
-      var time1,time2,time3;
-      var size;
-      //Check if the pdf exists
-      self.fileExists(inputfile)
-      .then(function(inputExists) {
-        if (!inputExists) { reject("Input File Does not exist"); }
-      })
-      //Convert to TIF
-      .then(function() {
-        time1 = Date.now() - start;
-        return convert();
-      })
-      .then(function(ret) {
-        size = ret;
-        return;
-      })
-      //Run Tesseract OCR
-      .then(function() {
-        time2 = Date.now() - start - time1;
-        return tesseract();
-      })
-      //Clean the hOCR output
-      .then((text) => {
-        if (text) {
-          return hocrClean(text);
-        } else {
-          return {text:'',hocr:'',x:size.x,y:size.y};
-        }
-      })
-      .then((output) => {
-        time3 = Date.now() - start - time1 - time2;
-        //console.log('Pre:'+time1+'ms Convert:'+ time2+ 'ms Tess:'+time3+'ms');
-        output.x = size.x;
-        output.y = size.y;
-        resolve(output);
-      })
-      .catch((error) => {
-        reject(error);
-      });
-    });
   }
+  
 };

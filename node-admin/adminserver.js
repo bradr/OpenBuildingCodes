@@ -1,9 +1,7 @@
 var express = require('express');
 var hbs = require('express-handlebars');
 var bodyParser = require('body-parser');
-//var search = require('./lib/search.js');
 var db = require('./lib/db.js');
-var ocr = require('./lib/ocr.js');
 
 var processRunner = false;
 
@@ -17,7 +15,7 @@ app.engine('hbs', hbs({extname: 'hbs', defaultLayout: 'main'}));
 app.set('view engine', 'hbs');
 
 app.use(bodyParser.json({ type: 'application/*+json' }));
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.urlencoded({ extended: false }));
 
 // parse application/json
 app.use(bodyParser.json());
@@ -42,6 +40,7 @@ function processRun() {
       resolve();
     } else {
       var process = require('./lib/process.js');
+      
       db.nextProcess()
       .then((proc) => {
         if (!proc) {
@@ -50,6 +49,7 @@ function processRun() {
           process.run(proc)
           .then(() => {
             if (!processRunner) {
+              db.addProcess(proc);
               resolve();
             } else {
               resolve(db.nextProcessKeep());
@@ -131,6 +131,7 @@ app.get('/admin/importCSV', function (req, res, next) {
     });
   });
 });
+
 app.get('/admin/exportCSV', function (req, res, next) {
   //Export Data from CSV file
   var json2csv = require('json2csv');
@@ -192,7 +193,7 @@ app.get('/admin/process/:id', function (req, res, next) {
     if (!pages) {
       process.getNumberOfPages(id)
       .then((num) => {
-        db.setParam(id,'pages',num);
+        db.setParam(id,'pages',parseInt(num));
         return num;
       });
     } else {
@@ -310,99 +311,6 @@ app.get('/admin/getInfo/:id', function (req, res, next) {
   });
 });
 
-app.get('/admin/getStatus/:id', function (req, res, next) {
-  var id = req.params.id;
-    var html = new Promise (function(resolve, reject) {
-      db.getParam(id, 'htmlurl', function(err, result) {
-        if (err) {
-          reject(err);
-        }
-        if (result) {
-          fs.stat("files/"+id+"/"+ id + ".html", function (err, stats) {
-            if (err || !stats.isFile()) {
-              resolve(id + " HTML File: Not Downloaded");
-            } else {
-              resolve(" HTML File: Downloaded!");
-            }
-          });
-        } else {
-          resolve(id + " HTML File: None");
-        }
-      });
-    });
-
-    var pdfFile = new Promise (function(resolve, reject) {
-      db.getParam(id, 'pdfurl', function(err, url) {
-        if (err) {
-          reject(err);
-        }
-        if (url) {
-          fs.stat("files/"+id+"/"+id + ".pdf", function (err, result) {
-            if (err) {
-              resolve(err);
-            } else if (!result) {
-              resolve(id + " PDF File: Not Downloaded");
-            } else {
-              if (!result.isFile()) {
-                resolve(id + " PDF File: Not Downloaded");
-              } else {
-                resolve(id + " PDF File: Downloaded");
-              }
-            }
-          });
-        } else {
-          resolve(id + " PDF File: none");
-        }
-      });
-    });
-
-    var pdfSplit = new Promise (function(resolve, reject) {
-      ocr.getNumberOfPages(id)
-      .then(function(pages) {
-        fs.stat("files/" + id + "/img/" +id+ "_" + (pages-1) + ".tif", function(err, result) {
-          if (err) {
-            resolve(id + " Pages not split");
-          }
-          if (result) {
-            resolve(id + " Pages Split");
-          } else {
-            resolve(id + " Pages not split");
-          }
-        });        
-      });
-    });
-
-    var pdfOCR = new Promise (function(resolve, reject) {
-      ocr.getNumberOfPages(id)
-      .then(function(pages) {
-        fs.stat("files/"+id+"/"+id+"_" + (pages-1) + ".txt", function(err, result) {
-          if (err) {
-            resolve(id + " Pages not OCRed");
-          }
-          if (result) {
-            resolve(id + " Pages OCRed");
-          } else {
-            resolve(id + " Pages not OCRed");
-          }
-        });        
-      });
-    });
-
-  Promise.all([html, pdfFile, pdfSplit, pdfOCR])
-  .then(results => {
-    var result ="";
-    for (var r of results) {
-      result += r + "<br>";
-    }
-    res.status(200).send(result);
-  })
-  .catch(error => {
-    console.log(error);
-    res.status(500).send(error);
-  });
-
-});
-
 app.delete('/admin/deleteProcess', function (req, res, next) {
   console.log(req.body.process);
   db.removeProcess(req.body.process)
@@ -446,6 +354,7 @@ app.get('/admin/stop', function (req, res, next) {
 });
 
 app.get('/admin/run', function (req, res, next) {
+  var proc = [];
   if (processRunner) {
     //Pause:
     processRunner = false;
@@ -453,19 +362,21 @@ app.get('/admin/run', function (req, res, next) {
     //Run:
     processRunner = true;
     res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-control": "no-cache"});
-    function run() {
-      var cpuStat = require('cpu-stat');
+    var cpuStat = require('cpu-stat');
+    var cores = cpuStat.totalCores();
+    
+    function run(i) {
       cpuStat.usagePercent(function(err, percent) {
-        var cores = cpuStat.totalCores();
         console.log('CPU:'+percent+'('+cores+' cores)');
         res.write('data: CPU '+percent+' ('+cores+' cores)'+'\n\n');
       });
-      
+
       processRun()
       .then((result) => {
         if (result) {
-          res.write('data: '+result+' \n\n');
-          run();
+          proc[i] = result;
+          res.write('data: '+proc.toString()+' \n\n');
+          run(i);
         } else {
           processRun()
           .then(() => {
@@ -476,7 +387,10 @@ app.get('/admin/run', function (req, res, next) {
         }
       });
     }
-    run();
+    
+    for (var i=0;i<cores;i++) {
+      run(i);
+    }
   
   }
 });
