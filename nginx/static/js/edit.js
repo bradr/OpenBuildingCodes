@@ -1,12 +1,31 @@
 var consolejam = 0;
+var running = false;
+var evtSource;
 //$('#table').editableTableWidget();
-$('#textAreaEditor').editableTableWidget({editor: $('<textarea>')});
+//$('#textAreaEditor').editableTableWidget({editor: $('<textarea>')});
 $('head').append('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" type="text/css" />');
+
+deleteProcess = function(event) {
+	var process = event.text().replace(/\sDELETE/i,'');
+	$.ajax({
+		type: 'DELETE',
+		url: '/admin/deleteProcess',
+		data: {
+			'process': process
+		},
+		success: function() {
+			getProcesses();
+			toastr.success('Deleted');
+		},
+		error: function(error) {
+			toastr.error('Error: '+JSON.stringify(error));
+		}
+	});
+};
 
 add = function(cell) {
 	var row = cell.closest("tr");
 	var id = $.trim(row.find("td:nth-child(1)").text());
-	//if (!id) {id = 0;}
 
 	$.ajax({
 			type: 'PUT',
@@ -14,8 +33,9 @@ add = function(cell) {
 			data: {
 				'id': id,
 				'title': row.find("td:nth-child(2)").text(),
-				'htmlurl': row.find("td:nth-child(3)").text(),
-				'pdfurl': row.find("td:nth-child(4)").text()
+				'by': row.find("td:nth-child(3)").text(),
+				'htmlurl': row.find("td:nth-child(6)").text(),
+				'pdfurl': row.find("td:nth-child(7)").text()
 			},
 			success: function() {
 				toastr.success('Successfully added '+ id);
@@ -62,6 +82,17 @@ update = function(cell) {
 };
 
 download = function(id) {
+	$.ajax({
+		url: '/admin/download/'+id,
+		type: 'GET',
+		success: function(results) {
+			getInfo(id);
+			getProcesses();
+			toastr.success('Added to queue');
+		},
+		error: function(error) { toastr.error(error); }
+	});
+/*	
 	var evtSource = new EventSource("/admin/download/" + id);
 
 	evtSource.onmessage = function(e) {
@@ -81,7 +112,8 @@ download = function(id) {
 	evtSource.onerror = function(e) {
 		console("EventSource failed: " + JSON.stringify(e));
 	};
-}
+*/
+};
 
 deleteIndex = function() {
 	$.ajax({
@@ -108,7 +140,7 @@ exportCSV = function() {
 		success: function() { location.reload(); },
 		error: function(error) { toastr.error(error); }
 	});
-}
+};
 
 console = function(text) {
 	$("#console").append("<br> >" + text.replace(/<br>/gi,"<br> >"));
@@ -121,9 +153,80 @@ console = function(text) {
 	} else {
 		$("#console").scrollTop($("#console").prop("scrollHeight"));
 	}
-}
+};
+
+showProcesses = function(processes) {
+	$("#process").html('');
+	for (var i=0;i<processes.length;i++) {
+		if (i < 20) {
+			$("#process").append('<li>'+processes[i]+' <button class="cancel" onClick=\'deleteProcess($(this).parent());\'>Delete</button></li>');
+		} else {
+			$("#process").append('<br>...' + processes.length + ' Processes remaining');
+			i = processes.length;
+		}
+	}
+};
+
+getProcesses = function() {
+	$.ajax({
+		url: '/admin/getProcesses',
+		type: 'GET',
+		success: function(result) {
+			showProcesses(result.processes);
+		},
+		error: function(error) { toastr.error(error); }
+	});
+};
+
+getInfo = function(id) {
+	$.get('/admin/getInfo/' + id, function (data) {
+		if (data) {
+			toastr.success('Successfully filled in data for ' + id);
+		} else {
+			toastr.error('Error filling in document data for ' + id);
+		}
+	});
+};
 
 //Handlers:
+$('#stop').on('click', function (evt) {
+	$.get('/admin/stop',function() {
+		toastr.info("Stop");
+	});
+	if (running) {
+		running = false;
+		evtSource.close();
+	}
+});
+$('#run').on('click', function (evt) {
+	if (running) {
+		toastr.info("Pause");
+		running = false;
+		evtSource.close();
+	} else {
+		toastr.info("Running");
+		evtSource = new EventSource("/admin/run");
+	
+		evtSource.onmessage = function(e) {
+			if (e.data=='Completed') {
+				evtSource.close();
+				toastr.success('Completed')
+				running = false;
+				$("#currentprocess").html('');
+			}
+			else if (e.data.match(/^CPU/i)) {
+				$('#cpu').html(e.data);
+			} else {
+				getProcesses();
+				$("#currentprocess").html('Running ' + e.data);
+			}
+		};
+		evtSource.onerror = function(e) {
+			evtSource.close();
+		};
+	}
+});
+
 $('#button').on('click', function(evt){
 	$('#newid').html( $('#id').val() );
 	$('#newtitle').html( $('#title').val() );
@@ -169,6 +272,16 @@ $('.statusButton').on('click', function (evt) {
 	});
 });
 
+$('.processButton').on('click', function (evt) {
+	var id = $(this)[0].id;
+	
+	$.get("/admin/process/"+id, function (data) {
+		console(data);
+		toastr.info("Process Document");
+		getProcesses();
+	});
+});
+
 $('.ocrButton').on('click', function(evt){
 	var id = $(this)[0].id;
 	var evtSource = new EventSource("/admin/ocr/" + id);
@@ -200,6 +313,13 @@ $('.indexButton').on('click', function(evt){
 	});
 });
 
+$('#deleteProcesses').on('click',function(evt) {
+	$.ajax('/admin/deleteProcesses', {'method': 'delete'}, function() {
+		toastr.success('Deleted');
+		getProcesses();
+	});
+});
+
 $('#importCSV').on('click', function (evt){
 	importCSV();
 });
@@ -213,6 +333,13 @@ $('table td').on('change', function (evt, newValue) {
 	update($(this));
 });
 
-window.onload = function () {
-
+function loop() {
+	if (running) {
+		getProcesses();
+		var timeout = setTimeout(function() { loop(); },2000);
+	}
 }
+
+window.onload = function () {
+	getProcesses();
+};

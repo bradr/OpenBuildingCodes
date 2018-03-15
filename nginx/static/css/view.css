@@ -14,6 +14,11 @@ body {
     left: 0;
 }
 
+.codeText {
+    font-family: sans-serif;
+    font-size: .6em;
+}
+
 dt {
     font-size: .8em;
 }
@@ -21,3 +26,42 @@ dt {
 dd {
     font-size: .8em;
 }
+
+.ocr_page, .ocr_carea, .ocr_par, .ocr_line, .ocrx_word {
+    margin: 0px;
+    padding: 0px;
+}
+
+/*
+.ocr_page {
+    border: thin green dotted;
+}
+
+.ocr_carea {
+    border: thin red dotted;
+}
+
+.ocr_par {
+    border: thin blue dotted;
+}
+*/
+
+.ocr_line {
+    z-index:1;
+    position: absolute;
+    display: inline-block;
+    text-align: justify;
+    text-align-last: justify;
+    white-space: nowrap;
+}
+
+::selection {
+    background: rgb(172, 206, 247, 0.3);
+    background: rgba(172, 206, 247, 0.3);
+}
+
+/*
+.ocrx_word {
+    border: thin purple dotted;
+}
+*.

@@ -5,6 +5,7 @@
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
     <meta name="description" content="">
     <meta name="author" content="">
 
@@ -22,7 +23,7 @@
       <nav class="navbar navbar-light bg-light">
         <div class="container">
           <div class="col-lg-3">
-            <a class="navbar-brand" href="#">Open Building Codes</a>
+            <a class="navbar-brand" href="/">Open Building Codes</a>
           </div>
           <div class="col-lg-9">
             <form class="form-inline" id="search">
@@ -35,44 +36,41 @@
     </header>
     <!-- Page Content -->
     <div class="container">
-      
-      <!-- Upper Buttons -->
-      <div class="row">
-        <div class="col-lg-3 mt-2">
-          <div id="backButton"></div>
-        </div> 
-        <div class="col-lg-7 mt-5 mb-1">
-          <div id="ocr"><button class="btn btn-outline-secondary" id="ocrButton"><img src="/img/file-text.svg" alt="Text"></button></div>
-        </div> 
-        <div class="col-lg-2 mt-5 mb-1">
-          <button class="prev btn btn-outline-secondary" data-toggle="tooltip" data-trigger="hover" data-placement="top" data-delay={"show":500} title="Previous Page"><img src="/img/triangle-left.svg" alt="<"></button>
-          <button class="next btn btn-outline-secondary" data-toggle="tooltip" data-trigger="hover" data-placement="top" data-delay={"show":500} title="Next Page"><img src="/img/triangle-right.svg" alt=">"></button>
-        </div> 
+      <!-- Back Button -->
+      <div class="row mt-2 mb-2">
+        <div class="col-lg-1" id="backButton"></div>
       </div>
-      
       <!-- Page Content -->
       <div class="row">
-        <div class="col-lg-3">
+        <div class="col-lg-3 mt-lg-5 mb-3">
           <!-- Document Info -->
           <div class="" id="documentInfo"></div>
         </div>
         <!-- /.col-lg-3 -->
-        <div class="col-lg-8">
+        <div class="col">
+            <!-- Upper Buttons -->
+            <div class="row mt-2 mb-1">
+              <div class="col-6">
+                <div id="ocr"><button class="btn btn-outline-secondary" id="ocrButton"><img src="/img/file-text.svg" alt="Text"></button></div>
+              </div>
+              <div class="col-6 text-right">
+                <button class="prev btn btn-outline-secondary" data-toggle="tooltip" data-trigger="hover" data-placement="top" data-delay={"show":500} title="Previous Page"><img src="/img/triangle-left.svg" alt="<"></button>
+                <button class="next btn btn-outline-secondary" data-toggle="tooltip" data-trigger="hover" data-placement="top" data-delay={"show":500} title="Next Page"><img src="/img/triangle-right.svg" alt=">"></button>
+              </div> 
+            </div>
+            <!-- /Upper Buttons -->
           <div class="row card">
             <div id="viewport"></div>
           </div>
           <!-- /.row -->
         </div>
         <!-- /.col-lg-8 -->
-        <div class="col-lg-1"></div>
       </div>
       <!-- /.row -->
  
       <!-- Lower Buttons -->
-      <div class="row mb-5">
-        <div class="col-lg-10">
-        </div> 
-        <div class="col-lg-2">
+      <div class="row mb-5 mt-1">
+        <div class="col text-right">
           <button class="prev btn btn-outline-secondary" data-toggle="tooltip" data-trigger="hover" data-placement="top" data-delay={"show":500} title="Previous Page"><img src="/img/triangle-left.svg" alt="<"></button>
           <button class="next btn btn-outline-secondary" data-toggle="tooltip" data-trigger="hover" data-placement="top" data-delay={"show":500} title="Next Page"><img src="/img/triangle-right.svg" alt=">"></button>
         </div> 

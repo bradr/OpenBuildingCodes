@@ -22,7 +22,7 @@
       <nav class="navbar navbar-light bg-light">
         <div class="container">
           <div class="col-lg-3">
-            <a class="navbar-brand" href="#">Open Building Codes</a>
+            <a class="navbar-brand" href="/">Open Building Codes</a>
           </div>
           <div class="col-lg-9">
             <form class="form-inline" id="search">
@@ -43,13 +43,12 @@
           <div class="mt-3 mb-3">
               <script id="search-template" type="x-handlebars-template">
                 {{#each this}}
-                  <dt class=""><a href="view?code={{fields.id}}&page={{fields.page}}">Page {{fields.page}} of {{fields.title}} ({{fields.by}})</a></dt>
+                  <dt><a class="result_link" href="view?code={{fields.id}}&page={{fields.page}}" tabindex="{{inc @index}}">Page {{fields.page}} of {{fields.title}} ({{fields.by}})</a></dt>
                   <dl>{{{fragment}}}</dl>
                 {{/each}}
               </script>
             <div class="" id="search_results"></div>
           </div>
-          <!--card -->
         </div>
         <!-- /.col-lg-8 -->
         <div class="col-lg-4"></div>

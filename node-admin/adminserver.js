@@ -5,6 +5,8 @@ var bodyParser = require('body-parser');
 var db = require('./lib/db.js');
 var ocr = require('./lib/ocr.js');
 
+var processRunner = false;
+
 var fs = require('fs');
 
 var PORT = 8081;
@@ -18,13 +20,8 @@ app.use(bodyParser.json({ type: 'application/*+json' }));
 app.use(bodyParser.urlencoded({ extended: false }))
 
 // parse application/json
-app.use(bodyParser.json())
+app.use(bodyParser.json());
 
-// a middleware with no mount path; gets executed for every request to the app
-app.use(function (req, res, next) {
-  console.log('Time:', Date.now());
-  next();
-});
 app.use('/static',express.static('static'));
 
 // Admin Page
@@ -38,6 +35,45 @@ app.get('/admin', function (req, res, next) {
     }
   });
 });
+
+function processRun() {
+  return new Promise(function(resolve, reject) {
+    if (!processRunner) {
+      resolve();
+    } else {
+      var process = require('./lib/process.js');
+      db.nextProcess()
+      .then((proc) => {
+        if (!proc) {
+          resolve();
+        } else {
+          process.run(proc)
+          .then(() => {
+            if (!processRunner) {
+              resolve();
+            } else {
+              resolve(db.nextProcessKeep());
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+            if (proc) {
+              db.addProcess(proc);
+            }
+            if (!processRunner) {
+              resolve();
+            } else {
+              resolve(db.nextProcessKeep());
+            }
+          });
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+    }
+  });
+}
 
 //Post document data
 app.put('/admin/document', function (req, res, next) {
@@ -57,7 +93,7 @@ app.put('/admin/document', function (req, res, next) {
 
   //Post to database
   db.addDocument(JSON.stringify(json), function (err, result) {
-
+    
     if (err) {
       res.status(400).send(err);
     } else {
@@ -121,140 +157,63 @@ app.get('/admin/exportCSV', function (req, res, next) {
 
 app.get('/admin/download/:id', function (req, res, next) {
   var id = req.params.id;
-  db.getParam(id, 'htmlurl', function (err, htmlurl) {
-    db.getParam(id, 'pdfurl', function (err, pdfurl) {
-      var cp = require("child_process");
-      res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-control": "no-cache"});
-
-      if (htmlurl) {
-        if (htmlurl.match(/iccsafe\.org/)) {
-          var links = [];
-          var urlRoot = htmlurl.match(/^(.+)index\.html$/)[1];
-          function getLinks(html, callback) {
-            var cheerio = require('cheerio');
-            $ = cheerio.load(html);
-            var toc = $('#button_toc').html();
-            $ = cheerio.load(toc);
-            $('a').map(function(i, link) {
-              links.push(urlRoot+link.attribs.href)
-            });
-            fs.writeFileSync('files/'+id+'.html', toc);
-            callback(links);
-          }
-          var i = 0;
-          function downloadLinks(links) {
-            //var cmd = 'curl -g -o files/'+id+'_'+i+'.html "'+ links[i]+'"';
-            if (links[i].match(/html$/)) {
-              var request2 = require('request');
-              request2(links[i], function(error, response, html) {
-                var cheerio = require('cheerio');
-                $ = cheerio.load(html);
-                //console.log(html);
-                var contents = $('.print-section').html();
-                fs.writeFileSync('files/'+id+'_'+i+'.html', contents);
-                i++;
-                if (i < links.length) {
-                  console.log('Downloading' + links[i]);
-                  res.write('data: HTML '+links[i]+'\n\n');
-                  downloadLinks(links);
-                }
-              });
-            } else {
-              i++;
-              if (i < links.length) {
-                downloadLinks(links);
-              }
-            }
-
-            //console.log(cmd);
-            // var process = cp.exec(cmd, function(error, stdout, stderr) {
-            //   i++;
-            //   if (i < links.length) {
-            //     console.log(stdout+stderr);
-            //     res.write('data: HTML '+links[i]+'\n\n');
-            //     //downloadContents()
-            //     downloadLinks(links);
-            //   }
-            // });
-          }
-          var request = require('request');
-          request(htmlurl, function(error, response, html) {
-            getLinks(html, function (links) {
-              downloadLinks(links);
-            });
-          });
-        }
-
-      }
-
-      if (pdfurl) {
-        cp.exec('mkdir files/'+id, function(error,response) {
-          var process = cp.spawn('curl', ["-o", "files/"+id+"/"+id+".pdf", "-L", pdfurl]);
-          res.write('data: PDF Download Started\n\n');
-
-          process.stderr.on('data', function (data) {
-            var str = data.toString();
-            if (str.match(/\dM/g)) {
-              res.write('data: PDF '+ str + '\n\n');
-            }
-          });
-          process.on('close', function (code) {
-            res.write('data: --EOF--\n\n');
-          });
-          process.on('error', function (err) {
-            console.log('ERROR: '+err);
-          }); 
-          
-          
-          
-        });
-      } else {
-        res.write("data: PDF--none--\n\n");
-      }
+  db.getParams(id) //, function(err, params) {
+  .then((params) => {
+    //var p = 'mkdir files/'+id+'/ && mkdir files/'+id+'/img/ && mkdir files/'+id+'/meta/ && curl -o files/' + id + '/' + id + '.pdf -L ' + params.pdfurl;
+    //db.addProcess(p)
+    
+    //Download file if it hasn't been already:
+    db.addProcess('mkdir files/'+id)
+    .then(db.addProcess('mkdir files/'+id+'/img/'))
+    .then(db.addProcess('mkdir files/'+id+'/meta/'))
+    .then(db.addProcess('curl -o files/' + id + '/' + id + '.pdf -L ' + params.pdfurl))
+    .then(() => {
+      res.status(200).send();
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).send(err);
     });
+  })
+  .catch((err) => {
+    console.log('error: '+err);
+    res.status(500).send(err);
   });
 });
 
-app.get('/admin/ocr/:id', function (req, res, next) {
+app.get('/admin/process/:id', function (req, res, next) {
   var id = req.params.id;
-  db.readDocument(id, function (err, values) {
-    if (err) {
-      console.log('error: '+err)
-      res.status(500).send(err);
-    } else {
-      values = JSON.parse(values);
-      ocr.getNumberOfPages(id)
-      .then(function(num) {
-        res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-control": "no-cache"});
-        res.write('data: Initializing OCR function\n\n');
-        res.write('data: ' + id + ': OCRing ' + num + ' Pages'+'\n\n');
-        function loop(page) {
-          var start = Date.now();
-          ocr.ocr(id,page)
-          .then(function(page) {
-            var body = fs.readFileSync('files/'+id+'/'+id+'_'+page+'.txt',"utf8");
-            values.page = page;
-            values.body = body;
-            //console.log(values.body);
-            fs.writeFileSync('files/'+id+'/meta/'+id+'_'+page+'.json',JSON.stringify(values));
-            
-            if (page < num) {
-              var duration = Date.now()-start;
-              res.write('data: ' + id + ': OCR Page ' + page + ' of ' + num + ', Took: ' + duration + 'ms\n\n');
-              loop(page+1);
-            } else {
-              res.write('data: ' + id + ': OCR Complete: '+ page +' pages scanned\n\n');
-              res.write('data: --COMPLETE--\n\n');
-            }
-          });
-        }
-        loop(1);
-      })
-      .catch(function(err) {
-        console.log("ERROR "+err);
-        res.status(500).send(err);
+  var process = require('./lib/process.js');
+  
+  //Process
+  db.getParams(id)
+  .then((params) => {
+    var pages = params.pages;
+    if (!pages) {
+      process.getNumberOfPages(id)
+      .then((num) => {
+        db.setParam(id,'pages',num);
+        return num;
       });
+    } else {
+      return pages;
     }
+  })
+  .then((pages) => {
+    //Loop through all pages:
+    let promiseChain = [];
+    for (var i=0; i<pages; i++) {
+      promiseChain.push(process.go(id,i+1));
+    }
+    
+    Promise.all(promiseChain).then(function() { return; });
+  })
+  .then(() => {
+    res.status(200).send();
+  })
+  .catch((err) => {
+    console.log('error: '+err);
+    res.status(500).send(err);
   });
 });
 
@@ -279,9 +238,6 @@ app.get('/admin/index/:id', function (req, res, next) {
   var id = req.params.id;
   var cp = require("child_process");
   
-  //cp.exec('/app/bleve index index/index.bleve files/'+id+'/'+id+'_10*.json', function (error, stdout, stderr) {
-    
-  //var process = cp.spawn('pwd',["-P"], {cwd:'/app/'});  
   var process = cp.spawn('/app/bleve', ["index","/app/files/index/index.bleve", "/app/files/"+id+"/meta/"]);
   
   res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-control": "no-cache"});
@@ -301,17 +257,6 @@ app.get('/admin/index/:id', function (req, res, next) {
   process.on('error', function (err) {
     console.log('ERROR: '+err);
   });     
-    
-    
-    
-  //   if (error) {
-  //     console.log(error);
-  //     res.status(500).send("Error");
-  //   } else {
-  //     console.log(stdout);
-  //     res.status(200).send(stdout);
-  //   }
-  // });
 });
 
 app.get('/admin/getInfo/:id', function (req, res, next) {
@@ -322,48 +267,51 @@ app.get('/admin/getInfo/:id', function (req, res, next) {
     } else {
       var request = require('request');
       doc = JSON.parse(doc);
-      var url = doc['pdfurl'].replace(/\/[^/]*$/, "/");
-      url = url.replace(/download/, "details");
-      //console.log(url);
-      request(url, function(error, response, html) {
-        var cheerio = require('cheerio');
-        $ = cheerio.load(html);
-        doc.title = $.root().find("title").text().split(' : ')[0];
-        $('.key').each(function(i,elem) {
-
-          if ($(this).text() == 'by') {
-            doc.by = $(this).next().text();
-          } else if ($(this).text() == 'Collection') {
-            doc.collection = $(this).next().text();
-          } else if ($(this).text() == 'Language') {
-            doc.language = $(this).next().text();
-          } else if ($(this).text() == 'Ppi') {
-            doc.ppi = $(this).next().text();
-          }
+      //Archive.org rules:
+      if (doc['pdfurl'].match('archive.org')) {
+        var url = doc['pdfurl'].replace(/\/[^/]*$/, "/");
+        doc.url = url.replace(/download/, "details");
+        request(doc.url, function(error, response, html) {
+          var cheerio = require('cheerio');
+          $ = cheerio.load(html);
+          doc.title = $.root().find("title").text().split(' : ')[0];
+          $('.key').each(function(i,elem) {
+            if ($(this).text() == 'by') {
+              doc.by = $(this).next().text();
+            } else if ($(this).text() == 'Collection') {
+              doc.collection = $(this).next().text();
+            } else if ($(this).text() == 'Language') {
+              doc.language = $(this).next().text();
+            } else if ($(this).text() == 'Ppi') {
+              doc.ppi = $(this).next().text();
+            } else if ($(this).text() == 'Publication Date') {
+              doc.pubdate = $(this).next().text();
+            }
+          });
+          $('.key-val-big').each(function(i,elem) {
+            if ($(this).text().match("Usage")) {
+              doc.usage = $(this).children().text();
+              
+            } else if ($(this).text().match("Topics")) {
+              doc.topics = $(this).children().text();
+            }
+          });
+          doc.description = $('#descript').html();
+          db.addDocument(JSON.stringify(doc), function (err, result) {
+            if (err) {
+              res.status(500).send(err);
+            } else {
+              res.status(200).send('Success');
+            }
+          });
         });
-        $('.key-val-big').each(function(i,elem) {
-          if ($(this).text().match("Usage")) {
-            doc.usage = $(this).children().text();
-          } else if ($(this).text().match("Topics")) {
-            doc.topics = $(this).children().text();
-          }
-        });
-        doc.description = $('#descript').html();
-        db.addDocument(JSON.stringify(doc), function (err, result) {
-          if (err) {
-            res.status(500).send(err);
-          } else {
-            res.status(200).send('Success');
-          }
-        });
-      });
+      }
     }
   });
 });
 
 app.get('/admin/getStatus/:id', function (req, res, next) {
   var id = req.params.id;
-
     var html = new Promise (function(resolve, reject) {
       db.getParam(id, 'htmlurl', function(err, result) {
         if (err) {
@@ -453,6 +401,84 @@ app.get('/admin/getStatus/:id', function (req, res, next) {
     res.status(500).send(error);
   });
 
+});
+
+app.delete('/admin/deleteProcess', function (req, res, next) {
+  console.log(req.body.process);
+  db.removeProcess(req.body.process)
+  .then(() => {
+    res.status(200).send();
+  })
+  .catch((err) => {
+    console.log(err);
+    res.status(500).send(err);
+  });
+});
+
+app.delete('/admin/deleteProcesses', function (req, res, next) {
+  db.removeProcesses()
+  .then(() => {
+    res.status(200).send();
+  })
+  .catch((err) => {
+    console.log(err);
+    res.status(500).send(err);
+  });
+});
+
+app.get('/admin/getProcesses', function (req, res, next) {
+  db.getProcesses()
+  .then((results) => {
+    res.status(200).send({"processes":results});
+  })
+  .catch((err) => {
+    console.log(err);
+    res.status(500).send(err);
+  });
+});
+
+app.get('/admin/stop', function (req, res, next) {
+  if (processRunner) {
+    //Pause:
+    processRunner = false;
+  }
+  res.status(200).send();
+});
+
+app.get('/admin/run', function (req, res, next) {
+  if (processRunner) {
+    //Pause:
+    processRunner = false;
+  } else {
+    //Run:
+    processRunner = true;
+    res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-control": "no-cache"});
+    function run() {
+      var cpuStat = require('cpu-stat');
+      cpuStat.usagePercent(function(err, percent) {
+        var cores = cpuStat.totalCores();
+        console.log('CPU:'+percent+'('+cores+' cores)');
+        res.write('data: CPU '+percent+' ('+cores+' cores)'+'\n\n');
+      });
+      
+      processRun()
+      .then((result) => {
+        if (result) {
+          res.write('data: '+result+' \n\n');
+          run();
+        } else {
+          processRun()
+          .then(() => {
+            processRunner =false;
+            res.write('data: Completed\n\n');
+            return;
+          });
+        }
+      });
+    }
+    run();
+  
+  }
 });
 
 app.listen(PORT);

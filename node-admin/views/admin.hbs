@@ -2,7 +2,7 @@
   <h1>Admin</h1>
   <div class="status"></div>
   <table id="table" class="table table-striped fixed" width="600px  ">
-    <thead><tr><th width=140px>ID</th><th>Title</th><th width=80px>By</th><th width=80px>Usage</th><th width=80px>Language</th><th>HTML URL</th><th>PDF URL</th><th width=80px></th><th width=50px></th></tr></thead>
+    <thead><tr><th width=140px>ID</th><th>Title</th><th width=80px>By</th><th width=80px>Usage</th><th width=80px>Language</th><th>HTML URL</th><th>PDF URL</th><th width=80px>Pages</th><th width=80px></th><th width=50px></th></tr></thead>
     <tbody>
     {{#each document}}
       <tr>
@@ -13,6 +13,7 @@
         <td class="overflow">{{language}}</td>
         <td class="overflow">{{htmlurl}}</td>
         <td class="overflow">{{pdfurl}}</td>
+        <td class="overflow">{{pages}}</td>
         <td>
           <button id="{{id}}" type="button" class="btn btn-default statusButton" data-toggle="popover">Status</button>
         </td>
@@ -23,9 +24,9 @@
             </button>
             <ul class="dropdown-menu">
               <li><a href="#" class="downloadButton" id="{{id}}">Download</a></li>
-              <li><a href="#" class="infoButton" id="{{id}}">Get Document Info</a></li>
+              <!--<li><a href="#" class="infoButton" id="{{id}}">Get Document Info</a></li>-->
               <!-- <li><a href="#" class="splitButton" id="{{id}}">Split PDF Pages</a></li> -->
-              <li><a href="#" class="ocrButton" id="{{id}}">Process Pages</a></li>
+              <li><a href="#" class="processButton" id="{{id}}">Process Pages</a></li>
               <li><a href="#" class="" id="{{id}}"></a></li>
               <li><a href="#" class="" id="{{id}}"></a></li>
               <li><a href="#" class="" id="{{id}}"></a></li>
@@ -42,6 +43,7 @@
         <td id="newlanguage"><input id="language" type="text"></input></td>
         <td id="newhtmlurl"><input id="htmlurl" type="text"></input></td>
         <td id="newpdfurl"><input id="pdfurl" type="text"></input></td>
+        <td id="pages"><input id="pages" type="text"></input></td>
         <td><button id="button">Add</button></td>
       </tr>
   </tbody>
@@ -51,11 +53,19 @@
   <p>
     
   <button id="deleteIndex">Delete Index</button>
-  <div class="panel panel-default" style="position:fixed; bottom:10px; overflow:scroll; height:200px; width:80%" id="console">
+  <!--
+  <div class="panel panel-default" style="bottom:10px; overflow:scroll; height:200px; width:80%" id="console">
     <div class="panel-body"></div>
   </div>
+  -->
+  <div class="row">
+    <div><button id="run">Run</button> <button id="stop">Stop</button> <button id="deleteProcesses">Delete All</button>
+      <div class="mt-5 mb-5" id="cpu"></div>
+      <div class="mt-5 mb-5" id="currentprocess"></div>
+      <ul id="process"></ul>
+    </div>
+  </div>
 </div>
-<script src="js/mindmup-editabletable.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
 <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.css">
 <link rel="stylesheet" type="text/css" href="css/stylesheet.css">
