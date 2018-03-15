@@ -67,9 +67,23 @@ var self = module.exports = {
       var jsonfile = 'files/' + id + '/meta/'+ id + '_' + page + '.json';
       var json;
 
-      db.getParams(id)
-      .then((params) => {
-        json = params;
+      self.FileExists(jsonfile)
+      .then((exists) => {
+        if (exists) {
+          json = JSON.parse(fs.readFileSync(jsonfile,'ut8'));
+          return;
+        } else {
+          db.getParams(id)
+          .then((params) => {
+            json = params;
+            json.hocr='';
+            json.x='';
+            json.y='';
+            fs.writeFileSync(jsonfile, JSON.stringify(json));
+            return;
+          });
+        }
+      }).then(() => {
         return self.fileExists(pdffile);
       })
       .then((exists) => {
@@ -87,8 +101,11 @@ var self = module.exports = {
         }
       })
       .then(() => {
+        return self.fileExists(ocrfile+'.hocr');
+      })
+      .then((ocrexists) => {
         //Convert to TIF
-        if (json.hocr) {
+        if (json.hocr || ocrexists) {
           return true;
         } else {
           return self.fileExists(tiffile);
@@ -117,19 +134,22 @@ var self = module.exports = {
         }
       })
       .then(() => {
+        return self.fileExists(ocrfile+'.hocr');
+      })
+      .then((ocrexists) => {
         var p;
         if (!json.x || !json.y) {
           //Get Image Size:
           p = 'getSize '+id+'  '+page;
           db.addProcess(p);
         }
-        if (!json.hocr) {
+        if (!json.hocr && !ocrexists) {
           //OCR:
           p = 'tesseract -c preserve_interword_spaces=1 ' + tiffile + ' ' + ocrfile + ' hocr';
           db.addProcess(p);
-          p = 'getOCR '+id+' ' + page;
-          db.addProcess(p);
         }
+        p = 'getOCR '+id+' ' + page;
+        db.addProcess(p);
         return;
       })
       .then(() => {
@@ -203,15 +223,15 @@ var self = module.exports = {
             y: stdout.match(/[^x]+/g)[1]
           };
           
-          db.setParam(id,'x',size.x)
-          .then(() => {
-            return db.setParam(id,'y',size.y);
-          })
-          .then((json) => {
-            fs.writeFileSync(jsonfile, JSON.stringify(json));
-            
-            resolve();
-          });
+          var json = JSON.parse(fs.readFileSync(jsonfile,'utf8'));
+          if (json) {
+            json.x = size.x;
+            json.y = size.y;
+          } else {
+            json = {'x':size.x,'y':size.y};
+          }
+          fs.writeFileSync(jsonfile, JSON.stringify(json));
+          resolve();
         } else {
           reject(stderr);
         }
@@ -234,12 +254,16 @@ var self = module.exports = {
         }
       })
       .then((text) => {
-        return db.setParam(id, 'hocr', text);
+        var json = JSON.parse(fs.readFileSync(jsonfile,'utf8'));
+        if (json) {
+          json.hocr = text;
+        } else {
+          json = {'hocr':text};
+        }
+        return json;
       })
       .then((json) => {
-        
         fs.writeFileSync(jsonfile, JSON.stringify(json));
-        
         resolve();
       })
       .catch((err) => {
