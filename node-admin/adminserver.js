@@ -56,7 +56,7 @@ function processRun() {
             }
           })
           .catch((err) => {
-            console.log(err);
+            console.log('Error, readding proc: '+err);
             if (proc) {
               db.addProcess(proc);
             }
@@ -160,14 +160,20 @@ app.get('/admin/download/:id', function (req, res, next) {
   var id = req.params.id;
   db.getParams(id) //, function(err, params) {
   .then((params) => {
-    //var p = 'mkdir files/'+id+'/ && mkdir files/'+id+'/img/ && mkdir files/'+id+'/meta/ && curl -o files/' + id + '/' + id + '.pdf -L ' + params.pdfurl;
-    //db.addProcess(p)
-    
     //Download file if it hasn't been already:
     db.addProcess('mkdir files/'+id)
     .then(db.addProcess('mkdir files/'+id+'/img/'))
     .then(db.addProcess('mkdir files/'+id+'/meta/'))
-    .then(db.addProcess('curl -o files/' + id + '/' + id + '.pdf -L ' + params.pdfurl))
+    .then(() => {
+      process.fileExists('files/'+id+'/'+id+'.pdf')
+      .then((exists) => {
+        if (exists) {
+          return;
+        } else {
+          db.addProcess('curl -o files/' + id + '/' + id + '.pdf -L ' + params.pdfurl);
+        }
+      });
+    })
     .then(() => {
       res.status(200).send();
     })
@@ -186,35 +192,38 @@ app.get('/admin/process/:id', function (req, res, next) {
   var id = req.params.id;
   var process = require('./lib/process.js');
   
-  //Process
-  db.getParams(id)
-  .then((params) => {
-    var pages = params.pages;
-    if (!pages) {
-      process.getNumberOfPages(id)
-      .then((num) => {
-        db.setParam(id,'pages',parseInt(num));
-        return num;
-      });
-    } else {
-      return pages;
-    }
-  })
-  .then((pages) => {
-    //Loop through all pages:
-    let promiseChain = [];
-    for (var i=0; i<pages; i++) {
-      promiseChain.push(process.go(id,i+1));
-    }
-    
-    Promise.all(promiseChain).then(function() { return; });
-  })
+  process.addPages(id)
   .then(() => {
     res.status(200).send();
   })
   .catch((err) => {
     console.log('error: '+err);
     res.status(500).send(err);
+  });
+});
+
+
+
+
+app.get('/admin/processAll', function (req, res, next) {
+  var process = require('./lib/process.js');
+  db.documentList(function(error, list) {
+    function loop(i) {
+      process.addPages(JSON.parse(list[i]).id)
+      .then(() => {
+        i++;
+        if (i < list.length) {
+          loop(i);
+        } else {
+          res.status(200).send(i.toString());
+        }
+      })
+      .catch((err) => {
+        console.log('error: '+err);
+      res.status(500).send(err);
+      });
+    }
+    loop(0);
   });
 });
 
@@ -368,7 +377,6 @@ app.get('/admin/run', function (req, res, next) {
     
     function run(i) {
       cpuStat.usagePercent(function(err, percent) {
-        console.log('CPU:'+percent+'('+cores+' cores)');
         res.write('data: CPU '+percent+' ('+cores+' cores)'+'\n\n');
       });
 

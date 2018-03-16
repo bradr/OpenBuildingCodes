@@ -3,14 +3,14 @@ var client = redis.createClient(6379, "redis");
 
 var self = module.exports = {
   documentList: function (callback) {
+    console.log('documentList');
     var documentList = [];
     client.exists('documents', function (err, exists) {
       if (exists) {
         client.lrange('documents',0,-1, function (err, docs) {
           for (var i=0; i< docs.length; i++) {
             client.get(docs[i], function (err, data) {
-              if (data == null) { documentList.push("{}"); }
-              else {
+              if (data) {
                 documentList.push(data);
               }
               if (documentList.length == docs.length) {
@@ -73,16 +73,14 @@ var self = module.exports = {
     var th = this;
     client.set('numberOfDocuments', 0, function(error, result){});
     th.documentList(function (err, list) {
-      var counter = 0;
       if (!list) { callback (); }
-      for (var i in list) {
+      for (var i=0; i < list.length; i++) {
         var item = JSON.parse(list[i]);
         client.del(item.id, function (error, result) {
           client.lpop('documents', function (error, result) {
-            if (i == list.length-1 && counter == list.length-1) {
+            if (i == list.length-1) {
               callback(error, result);
             }
-            counter++;
           });
         });
       }

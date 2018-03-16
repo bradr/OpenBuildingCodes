@@ -6,6 +6,7 @@ var evtSource;
 var numProc = 0;
 var	avgTime = 0;
 var startTime = 0;
+var refreshTime = 0;
 var remaining = 0;
 
 //$('#table').editableTableWidget();
@@ -231,8 +232,11 @@ $('#run').on('click', function (evt) {
 				avgTime = (avgTime*numProc + (Date.now()-startTime))/(numProc+1);
 				numProc++;
 				startTime = Date.now();
+				if (Date.now() > (refreshTime+200)) {
+					getProcesses();
+					refreshTime = Date.now();
+				}
 				
-				getProcesses();
 				var out = e.data.replace(/,/g, "<br>");
 				var min = Math.floor(avgTime*remaining/1000/60);
 				var sec = Math.round((avgTime*remaining/1000/60 - min)*60);
@@ -334,10 +338,24 @@ $('.indexButton').on('click', function(evt){
 });
 
 $('#deleteProcesses').on('click',function(evt) {
-	$.ajax('/admin/deleteProcesses', {'method': 'delete'}, function() {
-		toastr.success('Deleted');
+	$.ajax('/admin/deleteProcesses',
+	{
+		'method': 'delete',
+		'success': function(data) {
+			toastr.success('Deleted');
+			getProcesses();
+		}
+	});
+});
+
+$('#processAll').on('click',function(evt) {
+	$.get('/admin/processAll', function(result) {
+		toastr.success('Added all processes: '+result);
 		getProcesses();
 	});
+});
+$('#refresh').on('click', function (evt){
+	getProcesses();
 });
 
 $('#importCSV').on('click', function (evt){

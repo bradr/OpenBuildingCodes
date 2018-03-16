@@ -1,4 +1,4 @@
-<div class="container">
+<div class="container-fluid">
   <h1>Admin</h1>
   <div class="status"></div>
   <table id="table" class="table table-striped fixed" width="600px  ">
@@ -50,16 +50,23 @@
   </table>
   <p>
   <button id="importCSV">Import from file</button> <button id="exportCSV">Export to file</button>
-  <p>
-    
   <button id="deleteIndex">Delete Index</button>
   <!--
   <div class="panel panel-default" style="bottom:10px; overflow:scroll; height:200px; width:80%" id="console">
     <div class="panel-body"></div>
   </div>
   -->
-  <div class="row">
-    <div><button id="run">Run</button> <button id="stop">Stop</button> <button id="deleteProcesses">Delete All</button>
+  <div class="">
+    <div class="mt-3 mb-3">
+      <button id="run">Run</button>
+      <button id="stop">Stop</button>
+    </div>
+    <div class="">
+      <button id="processAll">Process All</button>
+      <button id="deleteProcesses">Delete All</button>
+      <button id="refresh">Refresh</button>
+    </div>
+    <div class="">
       <div class="mt-3 mb-3" id="cpu"></div>
       <div class="mt-3 mb-3" id="stats"></div>
       <div class="mt-3 mb-3 card" id="currentprocess" style="font-size:.6em"></div>

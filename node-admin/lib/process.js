@@ -58,7 +58,7 @@ var self = module.exports = {
       }
     });
   },
-  go: function(id,page) {
+  processPage: function(id,page) {
     return new Promise(function(resolve, reject) {
       var pdffile = 'files/' + id + '/' + id + '.pdf';
       var tiffile = 'files/' + id + '/' + id + '_' + page + '.tif';
@@ -67,10 +67,10 @@ var self = module.exports = {
       var jsonfile = 'files/' + id + '/meta/'+ id + '_' + page + '.json';
       var json;
 
-      self.FileExists(jsonfile)
+      self.fileExists(jsonfile)
       .then((exists) => {
         if (exists) {
-          json = JSON.parse(fs.readFileSync(jsonfile,'ut8'));
+          json = JSON.parse(fs.readFileSync(jsonfile,'utf8'));
           return;
         } else {
           db.getParams(id)
@@ -104,7 +104,6 @@ var self = module.exports = {
         return self.fileExists(ocrfile+'.hocr');
       })
       .then((ocrexists) => {
-        //Convert to TIF
         if (json.hocr || ocrexists) {
           return true;
         } else {
@@ -112,6 +111,7 @@ var self = module.exports = {
         }
       })
       .then((tifexists) => {
+        //Convert to TIF
         if (!tifexists) {
           var p = 'convert -density 300 -compress Group4 -type bilevel -monochrome ' + pdffile + '[' + parseInt(page-1) + '] -flatten ' + tiffile;
           db.addProcess(p);
@@ -143,17 +143,20 @@ var self = module.exports = {
           p = 'getSize '+id+'  '+page;
           db.addProcess(p);
         }
-        if (!json.hocr && !ocrexists) {
-          //OCR:
-          p = 'tesseract -c preserve_interword_spaces=1 ' + tiffile + ' ' + ocrfile + ' hocr';
-          db.addProcess(p);
+        if (!json.hocr) {
+          if (!ocrexists) {
+            //OCR:
+            p = 'tesseract -c preserve_interword_spaces=1 ' + tiffile + ' ' + ocrfile + ' hocr';
+            db.addProcess(p);
+          }
+          p = 'getOCR '+id+' ' + page;
+          db.addProcess(p)
+          .then(() => {
+            return;
+          });
+        } else{
+          return;
         }
-        p = 'getOCR '+id+' ' + page;
-        db.addProcess(p);
-        return;
-      })
-      .then(() => {
-        fs.writeFileSync(jsonfile,JSON.stringify(json));
       })
       // .then(() => {
       //   //Clean Up
@@ -166,6 +169,41 @@ var self = module.exports = {
       });
     });
   },
+  addPages: function(id) {
+    //Add each page
+    return new Promise(function(resolve, reject) {
+      db.getParams(id)
+      .then((params) => {
+        var pages = params.pages;
+        if (!pages) {
+          self.getNumberOfPages(id)
+          .then((num) => {
+            db.setParam(id,'pages',parseInt(num));
+            return num;
+          });
+        } else {
+          return pages;
+        }
+      })
+      .then((pages) => {
+        //Loop through all pages:
+        let promiseChain = [];
+        for (var i=0; i<pages; i++) {
+          promiseChain.push(self.processPage(id,i+1));
+        }
+        
+        Promise.all(promiseChain).then(function() { return; });
+      })
+      .then(() => {
+        resolve();
+      })
+      .catch((err) => {
+        reject(err);
+      });
+    });
+  },
+  
+  
   getNumberOfPages: function (id) {
     return new Promise(function(resolve, reject) {
       var cp = require("child_process");
@@ -247,7 +285,7 @@ var self = module.exports = {
       self.fileExists(txtfile)
       .then((txtExists) => {
         if (!txtExists) {
-          reject();
+          reject('No File yet');
         } else {
           var text = fs.readFileSync(txtfile,'utf8');
           return text;
