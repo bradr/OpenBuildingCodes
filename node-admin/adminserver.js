@@ -2,6 +2,7 @@ var express = require('express');
 var hbs = require('express-handlebars');
 var bodyParser = require('body-parser');
 var db = require('./lib/db.js');
+var process = require('./lib/process.js');
 
 var processRunner = false;
 
@@ -39,7 +40,7 @@ function processRun() {
     if (!processRunner) {
       resolve();
     } else {
-      var process = require('./lib/process.js');
+      
       
       db.nextProcess()
       .then((proc) => {
@@ -164,6 +165,8 @@ app.get('/admin/download/:id', function (req, res, next) {
     db.addProcess('mkdir files/'+id)
     .then(db.addProcess('mkdir files/'+id+'/img/'))
     .then(db.addProcess('mkdir files/'+id+'/meta/'))
+    .then(db.addProcess('mkdir files/'+id+'/index/'))
+
     .then(() => {
       process.fileExists('files/'+id+'/'+id+'.pdf')
       .then((exists) => {
@@ -190,7 +193,6 @@ app.get('/admin/download/:id', function (req, res, next) {
 
 app.get('/admin/process/:id', function (req, res, next) {
   var id = req.params.id;
-  var process = require('./lib/process.js');
   
   process.addPages(id)
   .then(() => {
@@ -202,11 +204,7 @@ app.get('/admin/process/:id', function (req, res, next) {
   });
 });
 
-
-
-
 app.get('/admin/processAll', function (req, res, next) {
-  var process = require('./lib/process.js');
   db.documentList(function(error, list) {
     function loop(i) {
       process.addPages(JSON.parse(list[i]).id)
@@ -246,9 +244,31 @@ app.delete('/admin/index', function (req, res, next) {
 
 app.get('/admin/index/:id', function (req, res, next) {
   var id = req.params.id;
+  process.fileExists('/app/files/index/index.bleve')
+  .then((exists) => {
+    if (!exists) {
+      var cp = require("child_process");
+      cp.exec('mkdir /app/files/index/');
+    }
+    return process.getNumberOfPages(id);
+  })
+  .then((pages) => {
+    for (var i=0;i<pages;i++) {
+      db.addProcess('/app/bleve index /app/files/index/index.bleve /app/files/'+id+'/index/'+id+'_'+i+'.json');
+    }
+  })
+  .then(() => {
+    res.status(200).send();
+  })
+  .catch((err) => {
+    console.log(err);
+    res.status(500).send(err);
+  });
+  
+/*
   var cp = require("child_process");
   
-  var process = cp.spawn('/app/bleve', ["index","/app/files/index/index.bleve", "/app/files/"+id+"/meta/"]);
+  var process = cp.spawn('/app/bleve', ["index","/app/files/index/index.bleve", "/app/files/"+id+"/index/"]);
   
   res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-control": "no-cache"});
   res.write('data: Indexing \n\n');
@@ -260,14 +280,18 @@ app.get('/admin/index/:id', function (req, res, next) {
   process.stdout.on('data', function (data) {
     var str = data.toString();
     console.log(str);
+    res.write('data:'+str+' \n\n');
   });
   process.on('close', function (code) {
     console.log('closed: '+code);
+    res.write('data: complete \n\n');
   });
   process.on('error', function (err) {
     console.log('ERROR: '+err);
-  });     
+  }); 
+*/
 });
+
 
 app.get('/admin/getInfo/:id', function (req, res, next) {
   var id = req.params.id;
@@ -389,8 +413,16 @@ app.get('/admin/run', function (req, res, next) {
         } else {
           processRun()
           .then(() => {
-            processRunner =false;
-            res.write('data: Completed\n\n');
+            var finished = true;
+            for (var i=0; i<proc.length; i++) {
+              if (proc[i]) {
+                finished = false;
+              }
+            }
+            if (finished) {
+              processRunner =false;
+              res.write('data: Completed\n\n');
+            }
             return;
           });
         }

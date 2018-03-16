@@ -12,6 +12,7 @@ var self = module.exports = {
       var tesseract = process.match(/^tesseract\s/i);
       var mkdir = process.match(/^mkdir\s/i);
       var clean = process.match(/^rm\s/i);
+      var bleve = process.match(/bleve\s/i);
  
       if (size) {
       //getSize: 
@@ -41,7 +42,7 @@ var self = module.exports = {
           });
         }
     
-      } else if (download ||  convert || tesseract || clean || mkdir) {
+      } else if (download ||  convert || tesseract || clean || mkdir || bleve) {
       //Download or Convert or Tesseract (Normal functions)
         var cp = require("child_process");
         cp.exec(process, function (error, stdout, stderr) {
@@ -281,6 +282,7 @@ var self = module.exports = {
     return new Promise(function(resolve,reject) {
       var txtfile = 'files/' + id + '/' + id + '_' + page + '.hocr';
       var jsonfile = 'files/' + id + '/meta/' + id + '_' + page + '.json';
+      var indexfile = 'files/' + id + '/index/' + id + '_' + page + '.json';
       
       self.fileExists(txtfile)
       .then((txtExists) => {
@@ -302,6 +304,12 @@ var self = module.exports = {
       })
       .then((json) => {
         fs.writeFileSync(jsonfile, JSON.stringify(json));
+        
+        json.body = json.hocr.replace(/<[^>]+>/g, ' ');
+        json.body = json.body.replace(/\s\s+/g, ' ');
+        json.body = json.body.replace(/\\n\s(\\n\s)+/g, '\n');
+        json.hocr='';
+        fs.writeFileSync(indexfile, JSON.stringify(json));
         resolve();
       })
       .catch((err) => {

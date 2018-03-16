@@ -3,7 +3,6 @@ var client = redis.createClient(6379, "redis");
 
 var self = module.exports = {
   documentList: function (callback) {
-    console.log('documentList');
     var documentList = [];
     client.exists('documents', function (err, exists) {
       if (exists) {

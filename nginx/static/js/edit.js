@@ -327,14 +327,29 @@ $('.ocrButton').on('click', function(evt){
 });
 $('.indexButton').on('click', function(evt){
 	var id = $(this)[0].id;
-	$.get('/admin/index/' + id, function (data) {
-		if (data) {
-			toastr.success('Successfully indexed ' + id);
-			console(data);
+	var evtSource = new EventSource("/admin/index/" + id);
+/*	
+	evtSource.onmessage = function(e) {
+		if (e.data.match('complete')) {
+			evtSource.close();
+			toastr.success("Complete");
 		} else {
-			toastr.error('Error indexing ' + id);
+			toastr.info(e.data);
+		}
+	};
+	evtSource.onerror = function(e) {
+		console("EventSource failed: " + JSON.stringify(e));
+		toastr.error("Indexing Failed");
+	};
+*/
+	$.get('/admin/index/' + id, function (data) {
+		if (!data) {
+			toastr.success('Successfully indexed ' + id);
+		} else {
+			toastr.error('Error indexing ' + data);
 		}
 	});
+
 });
 
 $('#deleteProcesses').on('click',function(evt) {
