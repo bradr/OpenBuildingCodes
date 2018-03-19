@@ -76,15 +76,13 @@ function processRun() {
   });
 }
 
+
+
+
 //Post document data
 app.put('/admin/document', function (req, res, next) {
   //Data to store
-  var json = {
-    'id' : req.body.id,
-    'title' : req.body.title,
-    'htmlurl' : req.body.htmlurl,
-    'pdfurl' : req.body.pdfurl
-  };
+  json = req.body;
   
   //Extract the id from the url
   if (!json.id) {
@@ -94,7 +92,6 @@ app.put('/admin/document', function (req, res, next) {
 
   //Post to database
   db.addDocument(JSON.stringify(json), function (err, result) {
-    
     if (err) {
       res.status(400).send(err);
     } else {
@@ -103,6 +100,7 @@ app.put('/admin/document', function (req, res, next) {
   });
 
 });
+
 //Delete document data
 app.delete('/admin/document/:id', function (req, res, next) {
   //Delete from database
@@ -156,6 +154,7 @@ app.get('/admin/exportCSV', function (req, res, next) {
     });
   });
 });
+
 
 app.get('/admin/download/:id', function (req, res, next) {
   var id = req.params.id;
@@ -291,6 +290,7 @@ app.get('/admin/index/:id', function (req, res, next) {
   }); 
 */
 });
+
 
 
 app.get('/admin/getInfo/:id', function (req, res, next) {

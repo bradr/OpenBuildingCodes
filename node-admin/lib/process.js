@@ -1,5 +1,4 @@
 var fs = require('fs');
-var db = require('./db.js');
 
 var self = module.exports = {
   
@@ -60,6 +59,7 @@ var self = module.exports = {
     });
   },
   processPage: function(id,page) {
+    var db = require('./db.js');
     return new Promise(function(resolve, reject) {
       var pdffile = 'files/' + id + '/' + id + '.pdf';
       var tiffile = 'files/' + id + '/' + id + '_' + page + '.tif';
@@ -171,6 +171,7 @@ var self = module.exports = {
     });
   },
   addPages: function(id) {
+    var db = require('./db.js');
     //Add each page
     return new Promise(function(resolve, reject) {
       db.getParams(id)
@@ -181,6 +182,9 @@ var self = module.exports = {
           .then((num) => {
             db.setParam(id,'pages',parseInt(num));
             return num;
+          })
+          .catch((err) => {
+            reject(err);
           });
         } else {
           return pages;

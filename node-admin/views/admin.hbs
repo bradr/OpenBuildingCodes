@@ -1,56 +1,115 @@
-<div class="container-fluid">
+<div class="container">
   <h1>Admin</h1>
-  <div class="status"></div>
-  <table id="table" class="table table-striped fixed" width="600px  ">
-    <thead><tr><th width=140px>ID</th><th>Title</th><th width=80px>By</th><th width=80px>Usage</th><th width=80px>Language</th><th>HTML URL</th><th>PDF URL</th><th width=80px>Pages</th><th width=80px></th><th width=50px></th></tr></thead>
-    <tbody>
-    {{#each document}}
-      <tr>
-        <td class="overflow">{{id}}</td>
-        <td class="overflow">{{title}}</td>
-        <td class="overflow">{{by}}</td>
-        <td class="overflow">{{usage}}</td>
-        <td class="overflow">{{language}}</td>
-        <td class="overflow">{{htmlurl}}</td>
-        <td class="overflow">{{pdfurl}}</td>
-        <td class="overflow">{{pages}}</td>
-        <td>
-          <button id="{{id}}" type="button" class="btn btn-default statusButton" data-toggle="popover">Status</button>
-        </td>
-        <td>
-          <div class="btn-group">
-            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              <span class="caret"></span>
-            </button>
-            <ul class="dropdown-menu">
-              <li><a href="#" class="downloadButton" id="{{id}}">Download</a></li>
-              <li><a href="#" class="infoButton" id="{{id}}">Get Document Info</a></li>
-              <!-- <li><a href="#" class="splitButton" id="{{id}}">Split PDF Pages</a></li> -->
-              <li><a href="#" class="processButton" id="{{id}}">Process Pages</a></li>
-              <li><a href="#" class="indexButton" id="{{id}}">Index Pages</a></li>
-              <li><a href="#" class="" id="{{id}}"></a></li>
-              <li><a href="#" class="" id="{{id}}"></a></li>
-              <li><a href="#" class="" id="{{id}}"></a></li>
-              <li><a href="#" class="deleteButton" id="{{id}}">Remove</a></li>
-        </td>
-      </tr>
-    {{/each}}
-      <tr>
-        <td id="newid"><input id="id" type="text"></input></td>
-        <td id="newtitle"></td>
-        <td id="newby"></td>
-        <td id="newusage"></td>
-        <td id="newlanguage"></td>
-        <td id="newhtmlurl"><input id="htmlurl" type="text"></input></td>
-        <td id="newpdfurl"><input id="pdfurl" type="text"></input></td>
-        <td id="pages"></td>
-        <td><button id="button">Add</button></td>
-      </tr>
-  </tbody>
-  </table>
-  <p>
-  <button id="importCSV">Import from file</button> <button id="exportCSV">Export to file</button>
-  <button id="deleteIndex">Delete Index</button>
+
+    <div class="input-group">
+      <input type="text" class="form-control" placeholder="URL" aria-label="PDF URL" aria-describedby="basic-addon2" id="newDocurl">
+      <div class="input-group-append">
+        <button class="btn btn-outline-secondary" type="button" id="addDocButton">Add</button>
+      </div>
+    </div>
+
+  <div class="row mt-3 mb-3">
+    <div class="card col-3 pt-3 pb-3">
+
+      <div class="doclist" style='height:400px'>
+        <ul class="nav nav-tabs flex-sm-column" id="nav-tab" role="tablist" aria-orientation="vertical">
+          {{#each document}}
+          <li class="nav-item">
+            <a class="nav-link" id="v-nav-{{id}}-tab" data-toggle="tab" href="#v-nav-{{id}}" role="tab" aria-controls="v-pills-{{id}}" aria-selected="false">{{id}}</a><br>
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+
+    </div>
+      <div class="card col">
+          <div class="tab-content" id="v-nav-tabContent">
+            {{#each document}}
+              <div class="tab-pane fade" id="v-nav-{{id}}" role="tabpanel" aria-labelledby="v-nav-{{id}}-tab">
+                <div id="title-{{id}}"><h2>{{title}}</h2></div>
+                <div class="row mt-3">
+                  <div class="col">
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text">By</span>
+                      </div>
+                      <input type="text" class="form-control" id="by-{{id}}" value="{{by}}">
+                    </div>
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="language">Language</span>
+                      </div>
+                      <input type="text" class="form-control" id="language-{{id}}" value="{{language}}">
+                    </div>
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="pdfurl">PDFurl</span>
+                      </div>
+                      <input type="text" class="form-control" id="pdfurl-{{id}}" value="{{pdfurl}}">
+                    </div>
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="htmlurl">HTMLurl</span>
+                      </div>
+                      <input type="text" class="form-control" id="htmlurl-{{id}}" value="{{htmlurl}}">
+                    </div>
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="usage">Usage</span>
+                      </div>
+                      <input type="text" class="form-control" id="usage-{{id}}" value="{{usage}}">
+                    </div>
+                  </div>
+                  <div class="col">
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="pubdate">Date</span>
+                      </div>
+                      <input type="text" class="form-control" id="pubdate-{{id}}" value="{{pubdate}}">
+                    </div>
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="topics">Topics</span>
+                      </div>
+                      <input type="text" class="form-control" id="topics-{{id}}" value="{{topics}}">
+                    </div>
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="collection">Collection</span>
+                      </div>
+                      <input type="text" class="form-control" id="collection-{{id}}" value="{{collection}}">
+                    </div>
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="location">Location</span>
+                      </div>
+                      <input type="text" class="form-control" id="location-{{id}}" value="{{location}}">
+                    </div>
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="description">Description</span>
+                      </div>
+                      <input type="text" class="form-control" id="description-{{id}}" value="{{description}}">
+                    </div>
+                  </div>
+                </div>
+                  <div class="mt-5">
+                    <button class="updateDoc btn btn-primary" id="{{id}}">Update</button>
+                    <button class="downloadButton btn btn-sm" id="{{id}}">Download</button>
+                    <button class="infoButton btn btn-sm" id="{{id}}">Get Document Info</button>
+                    <button class="processButton btn btn-sm" id="{{id}}">Process Pages</button>
+                    <button class="indexButton btn btn-sm" id="{{id}}">Index Pages</button>
+                    <button class="deleteButton btn btn-sm btn-danger" id="{{id}}">Remove</button>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+      </div>
+      
+  </div>
+
+  <button class="btn" id="importCSV">Import from file</button> <button class="btn" id="exportCSV">Export to file</button>
+  <button class="btn" id="deleteIndex">Delete Index</button>
   <!--
   <div class="panel panel-default" style="bottom:10px; overflow:scroll; height:200px; width:80%" id="console">
     <div class="panel-body"></div>
@@ -58,13 +117,13 @@
   -->
   <div class="">
     <div class="mt-3 mb-3">
-      <button id="run">Run</button>
-      <button id="stop">Stop</button>
+      <button class="btn" id="run">Run</button>
+      <button class="btn" id="stop">Stop</button>
     </div>
     <div class="">
-      <button id="processAll">Process All</button>
-      <button id="deleteProcesses">Delete All</button>
-      <button id="refresh">Refresh</button>
+      <button class="btn" id="processAll">Process All</button>
+      <button class="btn" id="deleteProcesses">Delete All</button>
+      <button class="btn" id="refresh">Refresh</button>
     </div>
     <div class="">
       <div class="mt-3 mb-3" id="cpu"></div>

@@ -31,62 +31,55 @@ deleteProcess = function(event) {
 	});
 };
 
-add = function(cell) {
-	var row = cell.closest("tr");
-	var id = $.trim(row.find("td:nth-child(1)").text());
-
+addDocument = function(url) {
+	var pdfurl, htmlurl;
+	if (url.match(/.pdf$/i)) {
+		pdfurl = url;
+	} else if (url.match(/.html$/i)) {
+		htmlurl = url;
+	}
 	$.ajax({
 			type: 'PUT',
 			url: '/admin/document',
 			data: {
-				'id': id,
-				'title': row.find("td:nth-child(2)").text(),
-				'by': row.find("td:nth-child(3)").text(),
-				'htmlurl': row.find("td:nth-child(6)").text(),
-				'pdfurl': row.find("td:nth-child(7)").text()
+				'htmlurl': htmlurl,
+				'pdfurl': pdfurl
 			},
 			success: function() {
-				toastr.success('Successfully added '+ id);
-				setTimeout(function() {
-					location.reload();
-				}, 3000);
+				toastr.success('Successfully added');
 			},
 			error: function(error) { toastr.error('Error: ' + error.responseText ); }
 	});
 };
 
-update = function(cell) {
-	var row = cell.closest("tr");
-	if (/^new.*/.test(cell.attr('id'))){
-		return false;
-	} else 	if (cell.index()==0) {
-		toastr.error('Can\' Change Index');
-		location.reload();
-		return false;
-	}
-	var id = $.trim(row.find("td:nth-child(1)").text());
+updateDoc = function(id) {
+	var docid = id.replace(/\./g,'\\.');
+	
+	var test = document.getElementById('by-'+id).value; // $('#by-'+id)[0].val();
+	toastr.info(test);
+	
 	$.ajax({
-		url: '/admin/document/'+id,
-		type: 'DELETE',
-		success: function (result) {
-			toastr.success('Successfully deleted '+ id);
-			$.ajax({
-					type: 'PUT',
-					url: '/admin/document',
-					data: {
-						'id': id,
-						'title': row.find("td:nth-child(2)").text(),
-						'htmlurl': row.find("td:nth-child(3)").text(),
-						'pdfurl': row.find("td:nth-child(4)").text()
-					},
-					success: function() {
-						toastr.success('Successfully added '+ id);
-
-					},
-					error: function(error) { toastr.error('Error: ' + error.responseText ); }
-			});
-		}
-	});
+			type: 'PUT',
+			url: '/admin/document',
+			data: {
+				'id': id,
+				'title': $('#title-'+docid).text(),
+				'by': document.getElementById('by-'+id).value,
+				'language': document.getElementById('language-'+id).value,
+				'htmlurl': document.getElementById('htmlurl-'+id).value,
+				'pdfurl': document.getElementById('pdfurl-'+id).value,
+				'usage': document.getElementById('usage-'+id).value,
+				'pubdate': document.getElementById('pubdate-'+id).value,
+				'topics': document.getElementById('topics-'+id).value,
+				'collection': document.getElementById('collection-'+id).value,
+				'location': document.getElementById('location-'+id).value,
+				'description': document.getElementById('description-'+id).value
+			},
+			success: function() {
+				toastr.success('Successfully updated '+ id);
+			},
+			error: function(error) { toastr.error('Error: ' + error.responseText ); }
+	});	
 };
 
 download = function(id) {
@@ -100,27 +93,6 @@ download = function(id) {
 		},
 		error: function(error) { toastr.error(error); }
 	});
-/*	
-	var evtSource = new EventSource("/admin/download/" + id);
-
-	evtSource.onmessage = function(e) {
-		if (e.data == "--EOF--") {
-			console("PDF File for " + id + " Successfully Downloaded");
-			toastr.success("PDF File for " + id + " Successfully Downloaded");
-			evtSource.close();
-		} else if (e.data.match(/^PDF--none--/)){
-			console("No PDF File to Download for: " +id);
-			evtSource.close();
-		} else if (e.data.match(/^PDF/)){
-			console(e.data);
-		} else if (e.data.match(/^HTML/)){
-			console("Downloading: " +e.data);
-		}
-	};
-	evtSource.onerror = function(e) {
-		console("EventSource failed: " + JSON.stringify(e));
-	};
-*/
 };
 
 deleteIndex = function() {
@@ -129,6 +101,19 @@ deleteIndex = function() {
 		type: 'DELETE',
 		success: function(result) { toastr.success(result); },
 		error: function(error) { toastr.error('Error: ' + JSON.stringify(error)); }
+	});
+}
+
+deleteDoc = function(id) {
+	$.ajax({
+		url: '/admin/document/'+id,
+		type: 'DELETE',
+		success: function (result) {
+			toastr.success('Successfully deleted '+ id);
+			setTimeout(function() {
+				location.reload();
+			}, 3000);
+		}
 	});
 }
 
@@ -148,19 +133,6 @@ exportCSV = function() {
 		success: function() { location.reload(); },
 		error: function(error) { toastr.error(error); }
 	});
-};
-
-console = function(text) {
-	$("#console").append("<br> >" + text.replace(/<br>/gi,"<br> >"));
-	if (!consolejam) {
-		consolejam = 1;
-		$('#console').animate({scrollTop: $('#console').prop("scrollHeight")}, 500, function() {
-			consolejam = 0;
-			$("#console").scrollTop($("#console").prop("scrollHeight"));
-		});
-	} else {
-		$("#console").scrollTop($("#console").prop("scrollHeight"));
-	}
 };
 
 showProcesses = function(processes) {
@@ -197,6 +169,7 @@ getInfo = function(id) {
 	});
 };
 
+
 //Handlers:
 $('#stop').on('click', function (evt) {
 	$.get('/admin/stop',function() {
@@ -207,6 +180,7 @@ $('#stop').on('click', function (evt) {
 		evtSource.close();
 	}
 });
+
 $('#run').on('click', function (evt) {
 	if (running) {
 		toastr.info("Pause");
@@ -251,33 +225,30 @@ $('#run').on('click', function (evt) {
 	}
 });
 
-$('#button').on('click', function(evt){
-	$('#newid').html( $('#id').val() );
-	$('#newtitle').html( $('#title').val() );
-	$('#newhtmlurl').html( $('#htmlurl').val() );
-	$('#newpdfurl').html( $('#pdfurl').val() );
-	add($(this));
+$('#addDocButton').on('click', function(evt){
+	var url = $('#newDocurl').val();
+	//Delete:
+	addDocument(url)
 });
+
 $('.deleteButton').on('click', function(evt){
 	//Delete:
 	var id = $(this)[0].id
-	$.ajax({
-		url: '/admin/document/'+id,
-		type: 'DELETE',
-		success: function (result) {
-			toastr.success('Successfully deleted '+ id);
-			setTimeout(function() {
-				location.reload();
-			}, 3000);
-		}
-	});
+	deleteDoc(id);
 });
+
 $('.downloadButton').on('click', function(evt){
 	download($(this)[0].id);
 });
 
+$('.updateDoc').on('click', function(evt){
+	var id = $(this)[0].id;
+	updateDoc(id);
+});
+
 $('.infoButton').on('click', function(evt){
 	var id = $(this)[0].id;
+	toastr.info(id);
 	$.get('/admin/getInfo/' + id, function (data) {
 		if (data) {
 			toastr.success('Successfully filled in data for ' + id);
@@ -306,42 +277,10 @@ $('.processButton').on('click', function (evt) {
 	});
 });
 
-$('.ocrButton').on('click', function(evt){
-	var id = $(this)[0].id;
-	var evtSource = new EventSource("/admin/ocr/" + id);
-	toastr.info("OCR In Progress");
-//	$('.status').append('<div id="'+id+'OcrPdf" class="alert alert-info collapse" role="alert"></div>');
-//	$("#"+id+"OcrPdf").collapse("show");
-	evtSource.onmessage = function(e) {
-		if (e.data == "--COMPLETE--") {
-			evtSource.close();
-			toastr.success("OCR Successful");
-		} else {
-			console(e.data);
-		}
-	};
-	evtSource.onerror = function(e) {
-		console("EventSource failed: " + JSON.stringify(e));
-		toastr.error("OCR Failed");
-	};
-});
 $('.indexButton').on('click', function(evt){
 	var id = $(this)[0].id;
 	var evtSource = new EventSource("/admin/index/" + id);
-/*	
-	evtSource.onmessage = function(e) {
-		if (e.data.match('complete')) {
-			evtSource.close();
-			toastr.success("Complete");
-		} else {
-			toastr.info(e.data);
-		}
-	};
-	evtSource.onerror = function(e) {
-		console("EventSource failed: " + JSON.stringify(e));
-		toastr.error("Indexing Failed");
-	};
-*/
+
 	$.get('/admin/index/' + id, function (data) {
 		if (!data) {
 			toastr.success('Successfully indexed ' + id);

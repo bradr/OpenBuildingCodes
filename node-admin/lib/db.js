@@ -1,5 +1,7 @@
+var fs = require('fs');
 var redis = require('redis');
 var client = redis.createClient(6379, "redis");
+var process = require('./process.js');
 
 var self = module.exports = {
   documentList: function (callback) {
@@ -30,8 +32,11 @@ var self = module.exports = {
       client.exists(json.id, function (err, exists) {
         if (exists) {
           client.set(json.id, doc, function (err, result) {
-            //console.log(JSON.stringify(doc));
-            callback(err, result);
+            self.jsonUpdate(json)
+            .then(()=> {
+              console.log(json.id+' Updated');
+              callback(err, result);
+            });
           });
         } else {
           client.rpush('documents', json.id, function (err, result) {
@@ -216,5 +221,80 @@ var self = module.exports = {
         }
       });
     });
+  },
+  jsonUpdate: function(json) {
+    return new Promise(function(resolve, reject) {
+      new Promise(function(resolve,reject) {
+        if (!json.pages) {
+          process.getNumberOfPages(json.id)
+          .then((num) => {
+            json.pages = parseInt(num);
+            resolve(json.pages);
+          })
+          .catch((err) => {
+            console.log(err);
+            resolve(0);
+          });
+        } else {
+          resolve(json.pages);
+        }
+      })
+      .then((pages) => {
+        var id = json.id;
+        var promises = [];
+        for (var i=0; i<parseInt(pages); i++) {
+          var promise = new Promise(() => {
+            var page = i+1;
+            var jsonfile = 'files/' + id + '/meta/' + id + '_' + page + '.json';
+            var indexfile = 'files/' + id + '/index/' + id + '_' + page + '.json';
+            
+            var jsoncontents;
+            var indexcontents;
+            
+            process.fileExists(jsonfile)
+            .then((jsonexists) => {
+              if (jsonexists) {
+                jsoncontents = JSON.parse(fs.readFileSync(jsonfile, 'utf8'));
+                for (var key in json) {
+                  jsoncontents[key] = json[key];
+                }
+              } else {
+                jsoncontents = json;
+              }
+              fs.writeFileSync(jsonfile, JSON.stringify(jsoncontents));
+              return;
+            })
+            .then(() => {
+              return process.fileExists(indexfile);
+            })
+            .then((indexexists) => {
+              if (indexexists) {
+                indexcontents = JSON.parse(fs.readFileSync(indexfile, 'utf8'));
+                for (var key in json) {
+                  indexcontents[key] = json[key];
+                }
+              } else {
+                indexcontents = json;
+              }
+              
+              fs.writeFileSync(indexfile, JSON.stringify(indexcontents));
+              return;
+            })
+            .catch((err) => {
+              console.log('jsonUpdate Error: '+err);
+            });
+          });
+          promises.push(promise);
+        }
+        Promise.all(promises)
+        .then(() => {
+          return;
+        });
+      })
+      .then(() => {
+        resolve();
+      });
+    });
   }
+  
 };

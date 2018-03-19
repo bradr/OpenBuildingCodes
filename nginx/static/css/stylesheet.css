@@ -1,6 +1,15 @@
 body {
   padding-top: 54px;
 }
+.nav-tabs {
+
+}
+
+.doclist {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  
+}
 
 @media (min-width: 992px) {
   body {
