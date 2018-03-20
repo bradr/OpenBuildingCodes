@@ -78,15 +78,17 @@ var self = module.exports = {
     client.set('numberOfDocuments', 0, function(error, result){});
     th.documentList(function (err, list) {
       if (!list) { callback (); }
-      for (var i=0; i < list.length; i++) {
-        var item = JSON.parse(list[i]);
-        client.del(item.id, function (error, result) {
-          client.lpop('documents', function (error, result) {
-            if (i == list.length-1) {
-              callback(error, result);
-            }
+      else {
+        for (var i=0; i < list.length; i++) {
+          var item = JSON.parse(list[i]);
+          client.del(item.id, function (error, result) {
+            client.lpop('documents', function (error, result) {
+              if (i == list.length-1) {
+                callback(error, result);
+              }
+            });
           });
-        });
+        }
       }
     });
   },
@@ -282,6 +284,7 @@ var self = module.exports = {
             })
             .catch((err) => {
               console.log('jsonUpdate Error: '+err);
+              resolve(0);
             });
           });
           promises.push(promise);

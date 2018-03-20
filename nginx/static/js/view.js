@@ -12,38 +12,47 @@ $(document).ready(function() {
   var filetype = "";
   toggleIcon();
 
-  $.get('../../files/' + code + '/meta/' + code + '_'+page+'.json', function(data) {
-    json = data;
-    //Set Viewport Size:
-    $('#viewport').outerHeight(json.y/json.x * $('#viewport').outerWidth());
-    
-    //Fill in code data:
-    $('#title').html(data.title);
-    $('#org').html(data.org);
-    $('#locations').html(data.locations);
-    if (data.pdfurl) {
-      filetype = 'pdf';
-    }
-    $('#documentInfo').html(documentInfo());
-    
-    //Fill in HTML codes
-    if (filetype == "html") {
-      $.get('../../files/' + code + '.html', function(data) {
-        $('#viewport').html(data);
-      });
-      
-    //Fill in PDF codes
-    } else if (filetype == "pdf") {
-      //Show the OCRed text
-      if (show == 'txt') {
-        displayText(json.hocr);
+  $.get('files/' + code + '/meta/' + code + '_'+page+'.json')
+    .done(function(data) {
+      json = data;
+      //Set Viewport Size:
+      if (json.x && json.y) {
+         $('#viewport').outerHeight(json.y/json.x * $('#viewport').outerWidth());
       } else {
-      //Show pdf page as .png
-        displayText(json.hocr);
-        displayPDF(code, page);
+        $('#viewport').outerHeight(11.0/8.5 * $('#viewport').outerWidth())
       }
-    }
-  });
+     
+      
+      //Fill in code data:
+      $('#title').html(data.title);
+      $('#org').html(data.org);
+      $('#locations').html(data.locations);
+      if (data.pdfurl) {
+        filetype = 'pdf';
+      }
+      $('#documentInfo').html(documentInfo());
+      
+      //Fill in HTML codes
+      if (filetype == "html") {
+        $.get('files/' + code + '.html', function(data) {
+          $('#viewport').html(data);
+        });
+        
+      //Fill in PDF codes
+      } else if (filetype == "pdf") {
+        //Show the OCRed text
+        if (show == 'txt') {
+          displayText(json.hocr);
+        } else {
+        //Show pdf page as .png
+          displayText(json.hocr);
+          displayPDF(code, page);
+        }
+      }
+    })
+    .fail(() => {
+      
+    });
   
   //Back Button:
   if (query) {
@@ -54,12 +63,12 @@ $(document).ready(function() {
   $('.next').click(function() {
     $('.next').tooltip('hide');
     page = parseInt(page)+1;
-    next(code,page);
+    page = next(code,page);
   });
   $('.prev').click(function() {
     $('.prev').tooltip('hide');
     page = parseInt(page)-1;
-    prev(code,page);
+    page = prev(code,page);
   });
   $('#ocrButton').click(function() {
     $('#ocrButton').tooltip('hide');
@@ -72,7 +81,7 @@ $(document).ready(function() {
   $('#search').on('submit',function(evt){
     evt.preventDefault();
     var searchTerm = $('#searchTerm').val();
-    window.location.href ="/search?query=" +searchTerm;
+    window.location.href ="search?query=" +searchTerm;
   });
   
   //Keypress handler:
@@ -82,10 +91,10 @@ $(document).ready(function() {
     } else {
       if ( e.which === 34 || e.which === 39 || e.which === 74 ) {
         page = parseInt(page)+1;
-        next(code,page);
+        page = next(code,page);
       } else if ( e.which === 33 || e.which === 37 || e.which === 75 ) {
         page = parseInt(page)-1;
-        prev(code,page);
+        page = prev(code,page);
       } else if ( e.which === 85 ) {
         window.location.href = document.referrer;
       } else if (e.which === 84 ) {
@@ -98,11 +107,20 @@ $(document).ready(function() {
   });
   //Enable Tooltips:
   $('[data-toggle="tooltip"]').tooltip()
+  
+  //Backup Picture
+  $(".codepic").on("error", function(){
+      $(this).attr('src', 'img/notfound.png');
+  });
 });
 
 $(window).resize(function(){
   //Set Viewport Size:
-  $('#viewport').outerHeight(json.y/json.x * $('#viewport').outerWidth());
+  if (json.x && json.y) {
+     $('#viewport').outerHeight(json.y/json.x * $('#viewport').outerWidth());
+  } else {
+    $('#viewport').outerHeight(11.0/8.5 * $('#viewport').outerWidth())
+  }
   positionText();
 });
 
@@ -112,10 +130,13 @@ function toggleOCR(code,page) {
     window.history.replaceState("Object", "", "view?code=" + code + "&page=" + page );
     show = "";
     displayPDF(code,page);
-    displayText(json.hocr);
+
   } else {
-    window.history.replaceState("Object", "", "/view?code=" + code + "&page=" + page + "&show=txt");
+    window.history.replaceState("Object", "", "view?code=" + code + "&page=" + page + "&show=txt");
     show = "txt";
+
+  }
+  if (json) {
     displayText(json.hocr);
   }
 }
@@ -125,17 +146,28 @@ function next(code,page) {
   if (show) {
     text = "&show=txt";
   }
+  if (page<1) {
+    page = 1;
+  } else if (page>json.pages) {
+    page = json.pages;
+  }
   window.history.replaceState("Object", "", "view?code=" + code + "&page=" + page + text);
   
   $('#viewport').html('');
   if (!show) {
     displayPDF(code,page);
   }
-  $.get('../../files/' + code + '/meta/' + code + '_'+page+'.json', function(data) {
+  $.get('files/' + code + '/meta/' + code + '_'+page+'.json', function(data) {
     json = data;
     //Set Viewport Size:
-    $('#viewport').outerHeight(json.y/json.x * $('#viewport').outerWidth());
-    displayText(json.hocr);
+    if (json.x && json.y) {
+       $('#viewport').outerHeight(json.y/json.x * $('#viewport').outerWidth());
+    } else {
+      $('#viewport').outerHeight(11.0/8.5 * $('#viewport').outerWidth())
+    }
+    if (json) {
+      displayText(json.hocr);
+    }
   });
   return page;
 }
@@ -145,24 +177,35 @@ function prev(code,page) {
   if (show) {
     text = "&show=txt";
   }
+  if (page<1) {
+    page = 1;
+  } else if (page>json.pages) {
+    page = json.pages;
+  }
   window.history.replaceState("Object", "", "view?code=" + code + "&page=" + page + text);
   
   $('#viewport').html('');
   if (!show) {
     displayPDF(code,page);
   }
-  $.get('../../files/' + code + '/meta/' + code + '_'+page+'.json', function(data) {
+  $.get('files/' + code + '/meta/' + code + '_'+page+'.json', function(data) {
     json = data;
     //Set Viewport Size:
-    $('#viewport').outerHeight(json.y/json.x * $('#viewport').outerWidth());
-    displayText(json.hocr);
+    if (json.x && json.y) {
+       $('#viewport').outerHeight(json.y/json.x * $('#viewport').outerWidth());
+    } else {
+      $('#viewport').outerHeight(11.0/8.5 * $('#viewport').outerWidth())
+    }
+    if (json) {
+      displayText(json.hocr);
+    }
   });
   return page;
 }
 
 function toggleIcon() {
   if (show=='txt') {
-    $('#ocrButton').html('<img src="/img/file-pdf.svg" alt="PDF">');
+    $('#ocrButton').html('<img src="img/file-pdf.svg" alt="PDF">');
     $('#ocrButton').tooltip('dispose');
     $('#ocrButton').tooltip({
       title: 'View PDF Page',
@@ -171,7 +214,7 @@ function toggleIcon() {
       trigger: 'hover'
     });
   } else {
-    $('#ocrButton').html('<img src="/img/file-text.svg" alt="Text">');
+    $('#ocrButton').html('<img src="img/file-text.svg" alt="Text">');
     $('#ocrButton').tooltip('dispose');
     $('#ocrButton').tooltip({
       title: 'View Document Text',
@@ -183,7 +226,9 @@ function toggleIcon() {
 }
 
 function displayText(text) {
-  $('#viewport').append('<div class="codeText">' + text + '</div>');
+  if (text) {
+    $('#viewport').append('<div class="codeText">' + text + '</div>');
+  }
   if (show == 'txt') {
     $('.ocr_line').css('color','rgba(0, 0, 0, 1)');
   } else {
@@ -193,7 +238,7 @@ function displayText(text) {
 }
 
 function displayPDF(code,page) {
-  $('#viewport').append('<img src="../../files/' +code + '/img/'+ code + '_' + page + '.png" style="max-width:100%;max-height:auto;position:absolute;z-index:0;" >');
+  $('#viewport').append('<img class="codepic" src="files/' +code + '/img/'+ code + '_' + page + '.png" style="max-width:100%;max-height:auto;position:absolute;z-index:0;" >');
 }
 
 function documentInfo() {
@@ -201,7 +246,10 @@ function documentInfo() {
   var html = ' \
     <div class="card"> \
       <div class="ml-3 mt-3"> \
-        <dl><dt>Title</dt><dd>' + json.title + '</dd><dt>Author</dt><dd>' + json.by + '</dd><dt>Language</dt><dd>' + json.language + '</dd></dl> \
+        <dl><dt>Title</dt><dd>' + json.title + '</dd> \
+        <dt>Author</dt><dd> ' + json.by + '</dd> \
+        <dt>Language</dt><dd>' + json.language + '</dd> \
+        <dt>'+ json.pages + ' Pages</dt></dl> \
       </div> \
     </div>';
   return html;

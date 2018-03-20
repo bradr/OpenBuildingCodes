@@ -225,6 +225,26 @@ $('#run').on('click', function (evt) {
 	}
 });
 
+$('.checkButton').on('click', function (evt) {
+	var id = $(this)[0].id
+	var docid = id.replace(/\./g,'\\.');
+	$("#check_"+docid).html('');
+	toastr.info("Checking "+id);
+	evtSource = new EventSource("/admin/check/"+id);
+
+	evtSource.onmessage = function(e) {
+		if (e.data=='Completed') {
+			evtSource.close();
+			toastr.success('Completed')
+		} else {
+			$("#check_"+docid).append(e.data+', ');
+		}
+	};
+	evtSource.onerror = function(e) {
+		evtSource.close();
+	};
+});
+
 $('#addDocButton').on('click', function(evt){
 	var url = $('#newDocurl').val();
 	//Delete:

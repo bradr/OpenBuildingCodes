@@ -57,10 +57,13 @@ function processRun() {
             }
           })
           .catch((err) => {
-            console.log('Error, readding proc: '+err);
-            if (proc) {
+            console.log('Error, readding proc: '+proc+' : '+err);
+            if (err.match(/Files exists/)) {
+              resolve(db.nextProcessKeep());
+            } else if (proc) {
               db.addProcess(proc);
             }
+            
             if (!processRunner) {
               resolve();
             } else {
@@ -75,9 +78,6 @@ function processRun() {
     }
   });
 }
-
-
-
 
 //Post document data
 app.put('/admin/document', function (req, res, next) {
@@ -341,6 +341,98 @@ app.get('/admin/getInfo/:id', function (req, res, next) {
         });
       }
     }
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+app.get('/admin/check/:id', function (req, res, next) {
+  var id = req.params.id;
+  res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-control": "no-cache"});
+  
+  var p1 = new Promise(function(resolve, reject) {
+    process.countPng(id)
+    .then((png) => {
+      console.log('1');
+      res.write('data: Png: '+png+ ' files\n\n');
+      resolve();
+    })
+    .catch((error) => {
+      res.write('data: Error with png files: '+ error +'\n\n');
+      resolve();
+    });
+  });
+  
+  var p2 = new Promise(function(resolve, reject) {
+    process.countMeta(id)
+    .then((meta) => {
+      console.log('2');
+      res.write('data: Meta: '+meta+ ' files\n\n');
+      resolve();
+    })
+    .catch((error) => {
+      res.write('data: Error with meta files: '+ error +'\n\n');
+      resolve();
+    });
+  });
+  
+  var p3 = new Promise(function(resolve,reject) {
+    process.countIndex(id)
+    .then((index) => {
+      console.log('3');
+      res.write('data: Index: '+index+ ' files\n\n');
+      resolve();
+    })
+    .catch((error) => {
+      res.write('data: Error with index files: '+ error +'\n\n');
+      resolve();
+    });
+  });
+  
+  var p4 = new Promise(function(resolve,reject) {
+    process.checkMeta(id)
+    .then((meta) => {
+      console.log('4');
+      res.write('data: MetaOcr: '+meta+' files\n\n');
+      resolve();
+    })
+    .catch((error) => {
+      res.write('data: '+ error +'\n\n');
+      resolve();
+    });
+  });
+  
+  var p5 = new Promise(function(resolve,reject) {
+    process.checkIndex(id)
+    .then((index) => {
+      console.log('5');
+      res.write('data: IndexOcr: '+ index + ' files\n\n');
+      resolve();
+    })
+    .catch((error) => {
+      res.write('data: '+ error +'\n\n');
+      resolve();
+    });
+  });
+  
+  Promise.all([p1,p2,p3,p4,p5])
+  .then(() => {
+    res.write('data: Completed\n\n');
+  })
+  .catch((error) => {
+    res.write('data: Error\n\n');
   });
 });
 

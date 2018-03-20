@@ -66,6 +66,7 @@ var self = module.exports = {
       var pngfile = 'files/' + id + '/img/' + id + '_' + page + '.png';
       var ocrfile = 'files/' + id + '/'+ id + '_' + page;
       var jsonfile = 'files/' + id + '/meta/'+ id + '_' + page + '.json';
+      var indexfile = 'files/' + id + '/index/'+ id + '_' + page + '.json';
       var json;
 
       self.fileExists(jsonfile)
@@ -158,6 +159,15 @@ var self = module.exports = {
         } else{
           return;
         }
+      })
+      .then(() => {
+        return self.fileExists(indexfile);
+      })
+      .then((indexexists) => {
+        if (!indexexists) {
+          db.addProcess('getOCR '+id+' '+page);
+        }
+        return;
       })
       // .then(() => {
       //   //Clean Up
@@ -320,6 +330,94 @@ var self = module.exports = {
         reject(err);
       });
     });
-  }
+  },
   
+  countPng(id) {
+    return new Promise(function(resolve, reject) {
+      var cp = require("child_process");
+      cp.exec('ls files/' + id + '/img/ | wc -l', function (error, stdout, stderr) {
+        if (stdout) {
+          resolve(stdout);
+        } else {
+          reject("Missing Png files");
+        }
+      });
+    });
+  },
+  countMeta(id) {
+    return new Promise(function(resolve, reject) {
+      var cp = require("child_process");
+      cp.exec('ls files/' + id + '/meta/ | wc -l', function (error, stdout, stderr) {
+        if (stdout) {
+          resolve(stdout);
+        } else {
+          reject("Missing Meta files");
+        }
+      });
+    });
+  },
+  checkMeta(id) {
+    return new Promise(function(resolve, reject) {
+      var db = require('./db.js');
+      db.getParams(id)
+      .then((doc) =>{
+        var pages = doc.pages;
+        for (var i=0; i<pages; i++) {
+          try{
+            var json = fs.readFileSync('files/' + id + '/meta/' + id + '_' + (i+1) + '.json');
+          } catch (err) {
+            reject(i + ' meta file missing '+err);
+          }
+          if (json) {
+            if (!json.hocr) {
+              reject('No OCR: ' + i);
+            }
+          } else {
+            reject('No meta file: '+i);
+          }
+        }
+        resolve(pages);
+      });
+    });
+  },
+
+  countIndex(id) {
+    return new Promise(function(resolve, reject) {
+      var cp = require("child_process");
+      cp.exec('ls files/' + id + '/index/ | wc -l', function (error, stdout, stderr) {
+        if (stdout) {
+          resolve(stdout);
+        } else {
+          reject(error);
+        }
+      });
+    });
+  },
+  checkIndex(id) {
+    return new Promise(function(resolve, reject) {
+      var num = 0;
+      var db = require('./db.js');
+      db.getParams(id)
+      .then((doc) =>{
+        var pages = doc.pages;
+        for (var i=0; i<pages; i++) {
+          try {
+            var json = JSON.parse(fs.readFileSync('files/' + id + '/index/' + id + '_' + (i+1) + '.json'));
+          } catch (err) {
+            reject(i + ' missing index file '+err);
+          }
+          if (json) {
+            if (!json.body) {
+              reject('No index OCR: ' + i);
+            } else {
+              num++;
+            }
+          } else {
+            reject('No index file: '+i);
+          }
+        }
+        resolve(num);
+      });
+    });
+  }
 };
