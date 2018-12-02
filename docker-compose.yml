@@ -9,7 +9,7 @@ services:
     expose:
       - "5000"
     volumes:
-      - ./search/index:/go/src/app/indexes
+      - ./files/index:/go/src/app/indexes
   node-admin:
     build: ./node-admin
     container_name: node-admin
@@ -30,7 +30,7 @@ services:
     build: ./nginx
     container_name: nginx
     ports:
-      - "81:81"
+      - "80:80"
     volumes:
       - ./nginx/static:/usr/share/nginx/html
       - ./files:/usr/share/nginx/html/files

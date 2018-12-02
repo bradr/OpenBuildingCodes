@@ -104,6 +104,17 @@ deleteIndex = function() {
 	});
 }
 
+reIndex = function() {
+	$.ajax({
+		url: '/admin/index',
+		type: 'GET',
+		success: function (result) {
+			toastr.success('Successfully reindexed: '+result);
+		},
+		error: function (error) { toastr.error('Error ' + JSON.stringify(error));}
+	});
+}
+
 deleteDoc = function(id) {
 	$.ajax({
 		url: '/admin/document/'+id,
@@ -299,7 +310,7 @@ $('.processButton').on('click', function (evt) {
 
 $('.indexButton').on('click', function(evt){
 	var id = $(this)[0].id;
-	var evtSource = new EventSource("/admin/index/" + id);
+	//var evtSource = new EventSource("/admin/index/" + id);
 
 	$.get('/admin/index/' + id, function (data) {
 		if (!data) {
@@ -341,6 +352,9 @@ $('#exportCSV').on('click', function (evt){
 $('#deleteIndex').on('click', function (evt){
 	deleteIndex();
 });
+$('#reIndex').on('click', function (evt){
+	reIndex();
+});
 $('table td').on('change', function (evt, newValue) {
 	update($(this));
 });
@@ -354,4 +368,5 @@ function loop() {
 
 window.onload = function () {
 	getProcesses();
+	$.ajaxSetup({timeout:10000});
 };

@@ -66,7 +66,7 @@ var self = module.exports = {
       var pngfile = 'files/' + id + '/img/' + id + '_' + page + '.png';
       var ocrfile = 'files/' + id + '/'+ id + '_' + page;
       var jsonfile = 'files/' + id + '/meta/'+ id + '_' + page + '.json';
-      var indexfile = 'files/' + id + '/index/'+ id + '_' + page + '.json';
+      var indexfile = 'files/index/files/'+ id + '_' + page + '.json';
       var json;
 
       self.fileExists(jsonfile)
@@ -250,9 +250,9 @@ var self = module.exports = {
   
   index: function (id, page) {
     return new Promise(function(resolve, reject) {
-      var jsonfile = 'files/' + id + '/meta/' + id + '_' + page + '.json';
+//      var jsonfile = 'files/' + id + '/meta/' + id + '_' + page + '.json';
       var cp = require("child_process");
-      cp.exec('/app/bleve index files/index/index.bleve '+jsonfile, function (error, stdout, stderr) {
+      cp.exec('/app/bleve index files/index/index.bleve /files/index/files/', function (error, stdout, stderr) {
         if (error) {
           console.log(error);
           reject(error);
@@ -296,7 +296,7 @@ var self = module.exports = {
     return new Promise(function(resolve,reject) {
       var txtfile = 'files/' + id + '/' + id + '_' + page + '.hocr';
       var jsonfile = 'files/' + id + '/meta/' + id + '_' + page + '.json';
-      var indexfile = 'files/' + id + '/index/' + id + '_' + page + '.json';
+      var indexfile = 'files/index/files/' + id + '_' + page + '.json';
       
       self.fileExists(txtfile)
       .then((txtExists) => {
@@ -364,7 +364,7 @@ var self = module.exports = {
         var pages = doc.pages;
         for (var i=0; i<pages; i++) {
           try{
-            var json = fs.readFileSync('files/' + id + '/meta/' + id + '_' + (i+1) + '.json');
+            var json = JSON.parse(fs.readFileSync('files/' + id + '/meta/' + id + '_' + (i+1) + '.json'));
           } catch (err) {
             reject(i + ' meta file missing '+err);
           }
@@ -384,7 +384,7 @@ var self = module.exports = {
   countIndex(id) {
     return new Promise(function(resolve, reject) {
       var cp = require("child_process");
-      cp.exec('ls files/' + id + '/index/ | wc -l', function (error, stdout, stderr) {
+      cp.exec('ls files/index/files/ | wc -l', function (error, stdout, stderr) {
         if (stdout) {
           resolve(stdout);
         } else {
@@ -402,7 +402,7 @@ var self = module.exports = {
         var pages = doc.pages;
         for (var i=0; i<pages; i++) {
           try {
-            var json = JSON.parse(fs.readFileSync('files/' + id + '/index/' + id + '_' + (i+1) + '.json'));
+            var json = JSON.parse(fs.readFileSync('files/index/files/' + id + '_' + (i+1) + '.json'));
           } catch (err) {
             reject(i + ' missing index file '+err);
           }

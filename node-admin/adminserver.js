@@ -58,8 +58,10 @@ function processRun() {
           })
           .catch((err) => {
             console.log('Error, readding proc: '+proc+' : '+err);
-            if (err.match(/Files exists/)) {
+		if (err) {
+            if (err.match(/Files exists/i)) {
               resolve(db.nextProcessKeep());
+		}
             } else if (proc) {
               db.addProcess(proc);
             }
@@ -114,13 +116,19 @@ app.delete('/admin/document/:id', function (req, res, next) {
 
 app.get('/admin/importCSV', function (req, res, next) {
   //Import Data from CSV file
-  var Converter = require('csvtojson').Converter;
-  var csvtojson = new Converter({});
-  csvtojson.fromFile('./files/database.csv', function (error, data) {
+//  var Converter = require('csvtojson').Converter;
+//  var csvtojson = new Converter({});
+//  csvtojson.fromFile('./files/database.csv', function (error, data) {
+  fs.readFile('files/database.json', function(err, datafile) {
+    datafile = datafile.toString().substr(1).slice(0,-1);
+    var data = datafile.split("},");
+for (var i = 0; i < data.length-1; i++) {
+  data[i] += '}';
+}
     db.wipe(function (err, result) {
       var counter = 0;
       for (var i in data) {
-        db.addDocument(JSON.stringify(data[i]),function (error, result) {
+        db.addDocument(data[i],function (error, result) {
           counter++;
           if (i == data.length-1 && counter == data.length-1) {
             res.send("Success");
@@ -133,16 +141,16 @@ app.get('/admin/importCSV', function (req, res, next) {
 
 app.get('/admin/exportCSV', function (req, res, next) {
   //Export Data from CSV file
-  var json2csv = require('json2csv');
+  //var json2csv = require('json2csv');
   db.documentList(function (err, json) {
     var csv;
-    json = '{"data": [' + json + ']}';
-    json2csv(JSON.parse(json), function (err, csv) {
-      if (err) {
+    json = '[' + json + ']';
+//    json2csv(JSON.parse(json), function (err, csv) {
+//      if (err) {
         //res.status(500).send(err)
 
-      } else {
-        fs.writeFile('files/database.csv', csv, function (err, result) {
+//      } else {
+        fs.writeFile('files/database.json', json, function (err, result) {
           if (err) {
             //res.status(500).send(err);
             console.log(err);
@@ -150,8 +158,8 @@ app.get('/admin/exportCSV', function (req, res, next) {
             res.status(200).send(result);
           }
         });
-      }
-    });
+//      }
+//    });
   });
 });
 
@@ -164,7 +172,7 @@ app.get('/admin/download/:id', function (req, res, next) {
     db.addProcess('mkdir files/'+id)
     .then(db.addProcess('mkdir files/'+id+'/img/'))
     .then(db.addProcess('mkdir files/'+id+'/meta/'))
-    .then(db.addProcess('mkdir files/'+id+'/index/'))
+//    .then(db.addProcess('mkdir files/'+id+'/index/'))
 
     .then(() => {
       process.fileExists('files/'+id+'/'+id+'.pdf')
@@ -230,13 +238,27 @@ app.delete('/admin/index', function (req, res, next) {
     if (error) {
       res.status(500).send("Error removing index " + error);
     } else {
-      cp.exec('/app/bleve create /app/files/index/index.bleve', function (error, stdout, stderr) {
+      var cp = require("child_process");
+      cp.exec('/app/bleve create -m /app/files/index/mapping.json /app/files/index/index.bleve', function (error, stdout, stderr) {
         if (error) {
           res.status(500).send("Error creating index "+error);
         } else {
           res.status(200).send("Success");
         }
       });
+    }
+  });
+});
+
+app.get('/admin/index', function (req, res, next) {
+  var id = req.params.id;
+  var cp = require("child_process");
+  cp.exec('/app/bleve index /app/files/index/index.bleve /app/files/index/files/', function(error, stdout, stderr) {
+    if (error) {
+	console.log(error);
+      res.status(500).send("Error reindexing " + error);
+    } else {
+      res.status(200).send("Success: " + stdout);
     }
   });
 });
@@ -253,7 +275,9 @@ app.get('/admin/index/:id', function (req, res, next) {
   })
   .then((pages) => {
     for (var i=0;i<pages;i++) {
-      db.addProcess('/app/bleve index /app/files/index/index.bleve /app/files/'+id+'/index/'+id+'_'+i+'.json');
+      //db.addProcess('/app/bleve index /app/files/index/index.bleve /app/files/'+id+'/index/'+id+'_'+(i+1)+'.json');
+	var cp = require("child_process");
+	cp.exec('/app/bleve index /app/files/index/index.bleve /app/files/index/files/*.json');
     }
   })
   .then(() => {

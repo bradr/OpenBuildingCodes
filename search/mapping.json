@@ -15,7 +15,10 @@
           ],
           "dynamic": true,
           "enabled": true
-        }
+        },
+	"description": {
+	"enabled": false
+	}
       }
     }
   },

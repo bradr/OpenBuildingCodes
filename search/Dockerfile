@@ -7,7 +7,7 @@ RUN go get github.com/blevesearch/bleve/... github.com/gorilla/mux/...
 
 COPY bleve-hosted /go/src/app/
 
-RUN go build 
+RUN go build
 
 #CMD go generate && ./bleve-hosted
-CMD ./bleve-hosted
+CMD ./app
